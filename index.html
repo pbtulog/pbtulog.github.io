@@ -12,8 +12,9 @@
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; max-width:100%;}
   body{margin:0;background:var(--bg);color:var(--text);font-family:Segoe UI,Arial,sans-serif;}
-  header{padding:14px 18px;background:var(--panel);border-bottom:1px solid var(--border);
-    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  header{position:sticky;top:0;z-index:50;padding:14px 18px;background:var(--panel);border-bottom:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+    box-shadow:0 4px 14px rgba(0,0,0,.35);}
   header h1{font-size:17px;margin:0;font-weight:600;}
   header .sub{color:var(--muted);font-size:11px;}
   #hud{display:flex;gap:18px;align-items:center;}
@@ -29,11 +30,11 @@
   #finishBtn:hover{background:var(--bad);color:#04121e;}
   #main{display:none;flex-direction:column;gap:14px;padding:14px;max-width:900px;margin:0 auto;}
   #main.show{display:flex;}
-  .col{display:flex;flex-direction:column;gap:10px;min-width:0;scroll-margin-top:88px;}
+  .col{display:flex;flex-direction:column;gap:10px;min-width:0;scroll-margin-top:var(--scroll-offset, 88px);}
   .panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px;min-width:0;}
   .panel h2{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);}
 
-  #selectedOrderBar{position:sticky;top:0;z-index:40;background:var(--panel);border:1px solid var(--accent);
+  #selectedOrderBar{position:sticky;top:var(--header-h, 64px);z-index:40;background:var(--panel);border:1px solid var(--accent);
     border-radius:10px;padding:9px 12px;align-items:center;justify-content:space-between;gap:10px;
     flex-wrap:wrap;box-shadow:0 6px 16px rgba(0,0,0,.45);}
   .sob-info{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);}
@@ -430,7 +431,7 @@ function renderOrders(){
 }
 function renderSelectedBar(){
   const bar = document.getElementById('selectedOrderBar');
-  if(!selectedOrderId){ bar.style.display='none'; bar.innerHTML=''; return; }
+  if(!selectedOrderId){ bar.style.display='none'; bar.innerHTML=''; syncScrollOffset(); return; }
   const o = orderById[selectedOrderId];
   bar.style.display='flex';
   bar.innerHTML = `
@@ -447,6 +448,7 @@ function renderSelectedBar(){
     <button class="sob-close" id="deselectOrderBtn">✕</button>
   `;
   document.getElementById('deselectOrderBtn').onclick=()=>selectOrder(selectedOrderId);
+  syncScrollOffset();
 }
 function renderTrainCard(tr, selOrder){
   let relevant = true, timeInfeasible = false, timeMsg='', route=null;
@@ -567,14 +569,28 @@ function renderAll(){
 }
 
 /* ---------- Timer / lifecycle ---------- */
+function syncHeaderHeight(){
+  const h = document.querySelector('header').offsetHeight;
+  document.documentElement.style.setProperty('--header-h', h+'px');
+  syncScrollOffset();
+}
+function syncScrollOffset(){
+  const header = document.querySelector('header').offsetHeight;
+  const bar = document.getElementById('selectedOrderBar');
+  const barH = bar && bar.style.display!=='none' ? bar.offsetHeight : 0;
+  document.documentElement.style.setProperty('--scroll-offset', (header+barH+12)+'px');
+}
+window.addEventListener('resize', syncHeaderHeight);
 document.getElementById('startBtn').onclick = startGame;
 function startGame(){
   document.getElementById('startScreen').style.display='none';
   document.getElementById('main').classList.add('show');
   document.getElementById('hud').style.display='flex';
+  document.querySelector('header .sub').style.display='none';
   timeLeft = GAME_DURATION_SECONDS;
   document.getElementById('timer').textContent = timeLeft;
   renderAll();
+  syncHeaderHeight();
   timerHandle = setInterval(()=>{
     timeLeft--;
     renderHUD();
