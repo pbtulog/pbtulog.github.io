@@ -544,7 +544,7 @@ function toggleWagon(order, train, wagon){
   a.legs[train.id] = wagon.id;
   const justCompleted = isComplete(order, a);
   if(justCompleted){
-    showFeedback(`${order.id} fully routed via ${routeLabel(route)}. Net €${(order.revenue-routeCost(route)).toFixed(1)}.`, 'ok');
+    showFeedback('Select an order, then tap a wagon to assign it.', 'neutral');
     selectedOrderId = null;
   } else {
     showFeedback(`Leg assigned. Assign the remaining leg on this route to complete ${order.id}.`, 'ok');
