@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>IRFDP Dispatching Game</title>
 <style>
   :root{
@@ -9,71 +10,76 @@
     --text:#e8eef5; --muted:#8fa3b8; --accent:#4fb0ff; --good:#3ecf8e;
     --bad:#ff5f6d; --warn:#ffb454; --gold:#f5c542;
   }
-  *{box-sizing:border-box;}
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{overflow-x:hidden;}
   body{margin:0;background:var(--bg);color:var(--text);font-family:Segoe UI,Arial,sans-serif;}
-  header{padding:14px 22px;background:var(--panel);border-bottom:1px solid var(--border);
+  header{padding:14px 18px;background:var(--panel);border-bottom:1px solid var(--border);
     display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
-  header h1{font-size:18px;margin:0;font-weight:600;}
-  header .sub{color:var(--muted);font-size:12px;}
-  #hud{display:flex;gap:22px;align-items:center;}
+  header h1{font-size:17px;margin:0;font-weight:600;}
+  header .sub{color:var(--muted);font-size:11px;}
+  #hud{display:flex;gap:18px;align-items:center;}
   .hud-item{text-align:center;}
-  .hud-item .val{font-size:22px;font-weight:700;}
-  .hud-item .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+  .hud-item .val{font-size:20px;font-weight:700;}
+  .hud-item .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
   #timer.val{color:var(--accent);}
   #timer.low{color:var(--bad);}
   #profit.val{color:var(--good);}
-  #main{display:none;grid-template-columns:340px 1fr 360px;gap:14px;padding:14px;max-width:1500px;margin:0 auto;}
+  #profit.val.neg{color:var(--bad);}
+  #main{display:none;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:14px;padding:14px;max-width:1400px;margin:0 auto;}
   #main.show{display:grid;}
   .col{display:flex;flex-direction:column;gap:10px;min-width:0;}
-  .panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px;}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px;min-width:0;}
   .panel h2{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);}
-  .order-card{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;
+
+  .order-card{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:10px 11px;
     margin-bottom:8px;cursor:pointer;transition:border-color .15s;}
   .order-card:hover{border-color:var(--accent);}
   .order-card.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);}
-  .order-card.assigned{border-color:var(--good);}
-  .order-card.assigned .status{color:var(--good);}
-  .order-top{display:flex;justify-content:space-between;font-weight:600;font-size:13px;}
-  .order-route{font-size:12px;color:var(--muted);margin-top:2px;}
-  .order-meta{display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:5px;}
-  .order-meta span{background:#101c28;border-radius:5px;padding:1px 6px;}
-  .status{font-size:11px;font-weight:600;margin-top:5px;color:var(--warn);}
-  .train-card{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;margin-bottom:8px;}
-  .train-top{display:flex;justify-content:space-between;font-weight:600;font-size:13px;}
-  .train-time{font-size:11px;color:var(--muted);}
-  .wagon-row{margin-top:7px;background:#101c28;border-radius:6px;padding:6px 8px;}
-  .wagon-row .wname{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;}
-  .bar{height:6px;border-radius:4px;background:#0a121a;margin-top:3px;overflow:hidden;}
-  .bar .fill{height:100%;background:var(--accent);}
-  .bar .fill.full{background:var(--bad);}
-  .barwrap{display:flex;gap:6px;margin-top:4px;}
-  .barwrap .b{flex:1;}
-  .barlabel{font-size:9px;color:var(--muted);}
-  #detail{min-height:120px;}
-  #detail .empty{color:var(--muted);font-size:12px;}
-  .route-block{border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:8px;background:var(--panel2);}
-  .route-title{font-size:12px;font-weight:600;margin-bottom:6px;}
-  .leg{margin-bottom:6px;}
-  .leg-name{font-size:11px;color:var(--muted);margin-bottom:3px;}
-  .wagon-choices{display:flex;gap:6px;flex-wrap:wrap;}
-  .wagon-choice{border:1px solid var(--border);border-radius:5px;padding:3px 7px;font-size:11px;cursor:pointer;background:#101c28;}
-  .wagon-choice.sel{border-color:var(--accent);color:var(--accent);}
-  .assign-btn{margin-top:6px;background:var(--accent);color:#04121e;border:none;border-radius:6px;
-    padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;}
-  .assign-btn:disabled{opacity:.4;cursor:not-allowed;}
-  .unassign-btn{margin-top:6px;margin-left:6px;background:transparent;color:var(--bad);border:1px solid var(--bad);
-    border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;}
-  #feedback{min-height:20px;font-size:12px;padding:8px 10px;border-radius:6px;margin-top:4px;}
-  #feedback.err{background:#3a1620;color:var(--bad);border:1px solid var(--bad);}
-  #feedback.ok{background:#123321;color:var(--good);border:1px solid var(--good);}
-  #startScreen,#endScreen{max-width:760px;margin:60px auto;padding:26px;background:var(--panel);
+  .order-card.complete{border-color:var(--good);}
+  .order-card.complete .status{color:var(--good);}
+  .order-card.partial{border-color:var(--warn);}
+  .order-card.partial .status{color:var(--warn);}
+  .order-top{display:flex;justify-content:space-between;font-weight:600;font-size:14px;}
+  .order-meta{display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:6px;}
+  .order-meta span{background:#101c28;border-radius:5px;padding:2px 7px;white-space:nowrap;}
+  .status{font-size:11px;font-weight:600;margin-top:6px;color:var(--warn);}
+
+  #feedbackBar{min-height:20px;font-size:12px;padding:9px 11px;border-radius:6px;margin-bottom:10px;
+    background:#101c28;border:1px solid var(--border);color:var(--muted);}
+  #feedbackBar.err{background:#3a1620;color:var(--bad);border-color:var(--bad);}
+  #feedbackBar.ok{background:#123321;color:var(--good);border-color:var(--good);}
+
+  .train-card{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px;
+    margin-bottom:10px;transition:opacity .15s;}
+  .train-card.disabled{opacity:.32;}
+  .train-head{font-size:12px;font-weight:700;margin-bottom:2px;}
+  .train-sub{font-size:10.5px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;}
+  .train-agg{font-size:10px;color:var(--muted);margin-bottom:7px;}
+  .time-banner{background:#3a1620;color:var(--bad);border:1px solid var(--bad);border-radius:6px;
+    padding:5px 8px;font-size:10.5px;margin-bottom:7px;}
+  .wagons-row{display:flex;gap:7px;flex-wrap:wrap;}
+  .wagon-chip{border:2px solid var(--border);border-radius:8px;padding:6px 8px;font-size:10.5px;
+    background:#101c28;cursor:pointer;min-width:108px;transition:border-color .1s;}
+  .wagon-chip .wtitle{font-weight:700;font-size:11px;margin-bottom:3px;display:flex;justify-content:space-between;}
+  .wagon-chip .wcap{color:var(--muted);font-size:9.5px;line-height:1.5;}
+  .wagon-chip .occupants{margin-top:4px;display:flex;gap:3px;flex-wrap:wrap;}
+  .occ-tag{background:#243b52;border-radius:4px;padding:1px 5px;font-size:9.5px;}
+  .occ-tag.me{background:var(--accent);color:#04121e;font-weight:700;}
+  .wagon-chip.ok{border-color:var(--good);}
+  .wagon-chip.full{border-color:var(--bad);opacity:.75;}
+  .wagon-chip.mine{border-color:var(--accent);background:#12283c;}
+  .wagon-chip.neutral{cursor:default;}
+  .wagon-chip.disabled{opacity:.4;cursor:not-allowed;pointer-events:none;}
+
+  #startScreen,#endScreen{max-width:760px;margin:40px auto;padding:26px;background:var(--panel);
     border:1px solid var(--border);border-radius:12px;}
   #startScreen h2,#endScreen h2{margin-top:0;}
-  #startScreen ul{color:var(--muted);font-size:14px;line-height:1.6;}
-  #startBtn{background:var(--accent);color:#04121e;border:none;border-radius:8px;padding:12px 20px;
-    font-size:15px;font-weight:700;cursor:pointer;margin-top:10px;}
+  #startScreen ul{color:var(--muted);font-size:14px;line-height:1.6;padding-left:20px;}
+  #startBtn{background:var(--accent);color:#04121e;border:none;border-radius:8px;padding:14px 22px;
+    font-size:15px;font-weight:700;cursor:pointer;margin-top:10px;width:100%;max-width:280px;}
   #endScreen{display:none;}
-  .result-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);}
+  .result-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;}
+  .result-row.total{font-size:15px;margin-top:2px;border-bottom:none;padding-top:9px;}
   .result-row .k{color:var(--muted);}
   .result-row .v{font-weight:700;}
   #pctBig{font-size:44px;font-weight:800;text-align:center;margin:14px 0;color:var(--gold);}
@@ -85,8 +91,19 @@
   .takeaway{margin-top:18px;padding:16px;background:#12202f;border-left:4px solid var(--accent);border-radius:6px;}
   .takeaway b{color:var(--accent);}
   #restartBtn{margin-top:16px;background:var(--panel2);color:var(--text);border:1px solid var(--border);
-    border-radius:8px;padding:10px 16px;cursor:pointer;}
+    border-radius:8px;padding:10px 16px;cursor:pointer;width:100%;}
   ::-webkit-scrollbar{width:8px;} ::-webkit-scrollbar-thumb{background:#33465c;border-radius:4px;}
+
+  @media (max-width: 800px){
+    #main{grid-template-columns:1fr;padding:10px;gap:10px;}
+    header{padding:10px 12px;}
+    header h1{font-size:15px;}
+    #hud{gap:12px;width:100%;justify-content:space-between;}
+    .hud-item .val{font-size:18px;}
+    #startScreen,#endScreen > div{margin:16px auto;padding:18px;}
+    .order-top{font-size:13px;}
+    .train-card{min-width:0;flex-basis:100%;}
+  }
 </style>
 </head>
 <body>
@@ -94,45 +111,41 @@
 <header>
   <div>
     <h1>IRFDP Dispatching Game</h1>
-    <div class="sub">Intermodal Rail Freight Dispatching Problem &mdash; a 30-second demo</div>
+    <div class="sub">Intermodal Rail Freight Dispatching Problem &mdash; a quick hands-on demo</div>
   </div>
   <div id="hud" style="display:none;">
-    <div class="hud-item"><div class="val" id="timer">30</div><div class="lbl">seconds left</div></div>
-    <div class="hud-item"><div class="val" id="profit">&euro;0</div><div class="lbl">profit</div></div>
-    <div class="hud-item"><div class="val" id="acceptedCount">0/9</div><div class="lbl">accepted</div></div>
+    <div class="hud-item"><div class="val" id="timer">90</div><div class="lbl">seconds left</div></div>
+    <div class="hud-item"><div class="val" id="profit">&euro;0</div><div class="lbl">net profit</div></div>
+    <div class="hud-item"><div class="val" id="acceptedCount">0/6</div><div class="lbl">routed</div></div>
   </div>
 </header>
 
 <div id="startScreen">
-  <h2>Maximize profit in 30 seconds.</h2>
-  <p>You are an intermodal freight operator. Below are 9 pending orders and 5 train services.
-  Assign orders to feasible trains &amp; wagons to build a dispatching plan.</p>
+  <h2>Maximize profit before time runs out.</h2>
+  <p>Six orders need to move from Hannover or Ludwigshafen to Verona. You can send each one directly,
+  or via the shared hub in München &mdash; but wagons, trains and money are all limited.</p>
   <ul>
-    <li>Click an <b>order</b>, then choose a <b>route</b> and <b>wagon(s)</b> for it.</li>
-    <li>Infeasible assignments are rejected immediately, with an explanation.</li>
-    <li>You can undo and reassign at any time before the clock runs out.</li>
-    <li>Goal: maximize total <b>revenue</b> of accepted orders &mdash; not the number of orders.</li>
+    <li>Tap an <span class="icon">📦</span><b>order</b> on the left, then tap a <span class="icon">🚃</span><b>wagon</b> to assign that leg.</li>
+    <li>München routes need <b>two</b> legs (feeder train + the shared München→Verona train) to count as delivered.</li>
+    <li>Every leg costs money to run, and changing trains at München costs an extra transshipment fee.</li>
+    <li>Any order you never fully route costs you a fixed <b>rejection penalty</b> at the end.</li>
+    <li>Goal: maximize <b>revenue &minus; transport &amp; transshipment costs &minus; rejection penalties</b>.</li>
   </ul>
-  <button id="startBtn">Start (30s)</button>
+  <button id="startBtn">Start</button>
 </div>
 
 <div id="main">
   <div class="col">
     <div class="panel">
-      <h2>Orders</h2>
+      <h2>📦 Orders</h2>
       <div id="orderList"></div>
     </div>
   </div>
   <div class="col">
-    <div class="panel" id="detail">
-      <h2>Assignment</h2>
-      <div class="empty">Select an order on the left to see feasible routes.</div>
-    </div>
-  </div>
-  <div class="col">
     <div class="panel">
-      <h2>Train Services</h2>
-      <div id="trainList"></div>
+      <h2>🚆 Routes &amp; Wagons</h2>
+      <div id="feedbackBar">Select an order, then tap a wagon to assign it.</div>
+      <div id="groupList"></div>
     </div>
   </div>
 </div>
@@ -140,43 +153,65 @@
 <div id="endScreen"></div>
 
 <script>
-/* ---------- Data ---------- */
-function t2m(h,m){return h*60+m;}
+/* ---------- Config ---------- */
+let GAME_DURATION_SECONDS = 90; // change this to make the round shorter/longer
+const PENALTY_COST = 53.4;      // flat cost for each order never fully routed
+const TRANSSHIP_COST = 53;      // flat cost added once per order that changes trains at München
+
+/* ---------- Icons ---------- */
+const ICON = {
+  train:'🚆', wagon:'🚃', weight:'⚖️', length:'📏', ready:'🕐', due:'⏳',
+  revenue:'💶', orders:'📦', cost:'🧾', penalty:'⚠️', transship:'🔀'
+};
+
+/* ---------- Display names ---------- */
+const CITY_NAME = {HANNOLEHRT:'Hannover', LUDWIGSHFN:'Ludwigshafen', 'MÜNCHEN':'München', VERONA:'Verona'};
+function city(id){ return CITY_NAME[id] || id; }
+const WEEKDAYS = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+function pad(n){ return String(n).padStart(2,'0'); }
+function fmtTime(mins){
+  const day = Math.floor(mins/1440), rem = mins - day*1440;
+  return WEEKDAYS[day%7]+' '+pad(Math.floor(rem/60))+':'+pad(rem%60);
+}
+
+/* ---------- Data (converted from Orders.csv / Services.csv / WagonTypes.json) ----------
+   Weight: kg -> tonnes (/1000). Length: mm -> metres (/1000) for wagons & orders (itu-Code),
+   Service Max-Length mm -> metres. Costs and the penalty/transshipment fees are taken as given. */
+const wagonTypeDefs = {
+  A: {maxLength:16, maxWeight:25, maxOrders:2},
+  B: {maxLength:16, maxWeight:20, maxOrders:2},
+  C: {maxLength:14, maxWeight:25, maxOrders:2},
+  D: {maxLength:13, maxWeight:20, maxOrders:2},
+};
+function makeWagons(serviceId, typeList){
+  return typeList.map((type,i)=>({id:`${serviceId}_${i+1}`, type, ...wagonTypeDefs[type]}));
+}
 const trains = [
- {id:'T1',name:'Train 1',from:'Hamburg',to:'Munich',dep:t2m(6,0),arr:t2m(11,0),
-   trainMaxWeight:28,trainMaxLength:26,
-   wagons:[{id:'W1a',maxWeight:20,maxLength:18,maxOrders:3},{id:'W1b',maxWeight:12,maxLength:10,maxOrders:2}]},
- {id:'T2',name:'Train 2',from:'Hamburg',to:'Nuremberg',dep:t2m(7,0),arr:t2m(12,0),
-   trainMaxWeight:26,trainMaxLength:23,
-   wagons:[{id:'W2a',maxWeight:16,maxLength:14,maxOrders:2},{id:'W2b',maxWeight:10,maxLength:9,maxOrders:2}]},
- {id:'T3',name:'Train 3',from:'Nuremberg',to:'Wels',dep:t2m(14,0),arr:t2m(18,0),
-   trainMaxWeight:22,trainMaxLength:19,
-   wagons:[{id:'W3a',maxWeight:14,maxLength:12,maxOrders:2},{id:'W3b',maxWeight:8,maxLength:7,maxOrders:1}]},
- {id:'T4',name:'Train 4',from:'Munich',to:'Wels',dep:t2m(13,0),arr:t2m(16,30),
-   trainMaxWeight:21,trainMaxLength:18,
-   wagons:[{id:'W4a',maxWeight:13,maxLength:11,maxOrders:2},{id:'W4b',maxWeight:8,maxLength:7,maxOrders:2}]},
- {id:'T5',name:'Train 5 (Direct)',from:'Hamburg',to:'Wels',dep:t2m(6,0),arr:t2m(20,30),
-   trainMaxWeight:22,trainMaxLength:20,
-   wagons:[{id:'W5a',maxWeight:22,maxLength:20,maxOrders:3}]},
+  {id:'83016B-1', from:'HANNOLEHRT', to:'MÜNCHEN', dep:1310, arr:1810, maxWeight:45, maxLength:32, costPerOrder:120,
+   wagons:makeWagons('83016B-1', ['A','A'])},
+  {id:'42869A-1', from:'LUDWIGSHFN', to:'MÜNCHEN', dep:1155, arr:1770, maxWeight:45, maxLength:32, costPerOrder:120,
+   wagons:makeWagons('42869A-1', ['A','A'])},
+  {id:'43135-2', from:'MÜNCHEN', to:'VERONA', dep:2150, arr:3195, maxWeight:40, maxLength:29, costPerOrder:180,
+   wagons:makeWagons('43135-2', ['A','B'])},
+  {id:'50221B-2', from:'HANNOLEHRT', to:'VERONA', dep:1630, arr:3480, maxWeight:30, maxLength:16, costPerOrder:220,
+   wagons:makeWagons('50221B-2', ['A'])},
+  {id:'69419-1', from:'LUDWIGSHFN', to:'VERONA', dep:1320, arr:2490, maxWeight:35, maxLength:27, costPerOrder:200,
+   wagons:makeWagons('69419-1', ['C','D'])},
 ];
 const trainById = Object.fromEntries(trains.map(t=>[t.id,t]));
 function wagonOf(trainId,wagonId){return trainById[trainId].wagons.find(w=>w.id===wagonId);}
 
 const orders = [
- {id:'O1',origin:'Hamburg',destination:'Wels',weight:17,length:15,revenue:900,ready:t2m(6,0),due:t2m(21,0)},
- {id:'O2',origin:'Hamburg',destination:'Wels',weight:9,length:8,revenue:650,ready:t2m(6,0),due:t2m(21,30)},
- {id:'O3',origin:'Hamburg',destination:'Wels',weight:5,length:4,revenue:400,ready:t2m(6,0),due:t2m(21,30)},
- {id:'O4',origin:'Hamburg',destination:'Munich',weight:10,length:9,revenue:350,ready:t2m(6,0),due:t2m(11,30)},
- {id:'O5',origin:'Hamburg',destination:'Nuremberg',weight:8,length:7,revenue:300,ready:t2m(7,0),due:t2m(12,30)},
- {id:'O6',origin:'Munich',destination:'Wels',weight:7,length:6,revenue:320,ready:t2m(13,0),due:t2m(17,0)},
- {id:'O7',origin:'Nuremberg',destination:'Wels',weight:6,length:5,revenue:280,ready:t2m(14,0),due:t2m(18,30)},
- {id:'O8',origin:'Hamburg',destination:'Wels',weight:6,length:5,revenue:500,ready:t2m(6,0),due:t2m(18,45)},
- {id:'O9',origin:'Hamburg',destination:'Wels',weight:4,length:3,revenue:250,ready:t2m(6,0),due:t2m(13,30)},
+ {id:'O1', origin:'HANNOLEHRT', destination:'VERONA', weight:8,  length:8.15,   revenue:650,  ready:1020, due:3360},
+ {id:'O2', origin:'HANNOLEHRT', destination:'VERONA', weight:19, length:12.192, revenue:900,  ready:1020, due:3600},
+ {id:'O3', origin:'HANNOLEHRT', destination:'VERONA', weight:14, length:9.13,   revenue:500,  ready:1020, due:3360},
+ {id:'O4', origin:'LUDWIGSHFN', destination:'VERONA', weight:22, length:13.716, revenue:1000, ready:1020, due:3360},
+ {id:'O5', origin:'LUDWIGSHFN', destination:'VERONA', weight:9,  length:6.06,   revenue:450,  ready:1020, due:3360},
+ {id:'O6', origin:'LUDWIGSHFN', destination:'VERONA', weight:16, length:12.192, revenue:750,  ready:1020, due:3360},
 ];
+const orderById = Object.fromEntries(orders.map(o=>[o.id,o]));
 
-function fmt(mins){const h=Math.floor(mins/60),m=mins%60;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');}
-
-/* ---------- Candidate routes (network topology) ---------- */
+/* ---------- Network / route logic (generic, derived from the trains list) ---------- */
 function candidateRoutes(order){
   const routes=[];
   trains.filter(t=>t.from===order.origin && t.to===order.destination).forEach(t=>routes.push([t]));
@@ -185,7 +220,7 @@ function candidateRoutes(order){
   });
   return routes;
 }
-function routeTimeFeasible(order,route){
+function routeTimeFeasible(order, route){
   if(route[0].dep < order.ready) return {ok:false,reason:'ready'};
   for(let i=1;i<route.length;i++){
     if(route[i].dep < route[i-1].arr) return {ok:false,reason:'connection'};
@@ -194,34 +229,48 @@ function routeTimeFeasible(order,route){
   if(last.arr > order.due) return {ok:false,reason:'due'};
   return {ok:true};
 }
-/* enumerate wagon-combinations for a route */
-function wagonCombos(route){
-  function rec(i){
-    if(i===route.length) return [[]];
-    const rest=rec(i+1);
-    const out=[];
-    route[i].wagons.forEach(w=>{
-      rest.forEach(r=>out.push([{trainId:route[i].id,wagonId:w.id},...r]));
-    });
-    return out;
-  }
-  return rec(0);
+function timeReasonMessage(reason, order){
+  if(reason==='ready') return `Order not ready before this route's departure.`;
+  if(reason==='connection') return `No valid connection: the next train departs before the previous one arrives.`;
+  return `Arrival would be after the order's due time (${fmtTime(order.due)}).`;
 }
-/* precompute all options per order: {routeIdx, legs:[{trainId,wagonId}], timeOk} */
-const orderOptions = {};
-orders.forEach(o=>{
-  const routes = candidateRoutes(o);
-  const opts=[];
-  routes.forEach((route,ri)=>{
-    const t = routeTimeFeasible(o,route);
-    wagonCombos(route).forEach(legs=>{
-      opts.push({routeIdx:ri, route, legs, timeOk:t.ok, timeReason:t.reason});
-    });
+function routeCost(route){
+  return route.reduce((s,t)=>s+t.costPerOrder,0) + (route.length>1 ? TRANSSHIP_COST : 0);
+}
+function relevantTrainIds(order){
+  const s = new Set();
+  candidateRoutes(order).forEach(route=>route.forEach(t=>s.add(t.id)));
+  return s;
+}
+function routeForTrain(order, trainId){
+  return candidateRoutes(order).find(route=>route.some(t=>t.id===trainId));
+}
+function matchingRoute(order, legs){
+  const ids = Object.keys(legs);
+  return candidateRoutes(order).find(route => route.length===ids.length && route.every(t=>legs[t.id]));
+}
+function subsetOfSomeRoute(order, trainIds){
+  return candidateRoutes(order).some(route=>{
+    const routeIds = route.map(t=>t.id);
+    return trainIds.every(id=>routeIds.includes(id));
   });
-  orderOptions[o.id]={routes, opts};
-});
+}
+function feasibleOptionsForOrder(order){
+  const opts=[];
+  candidateRoutes(order).forEach(route=>{
+    if(!routeTimeFeasible(order, route).ok) return;
+    function rec(i){
+      if(i===route.length) return [[]];
+      const rest=rec(i+1); const out=[];
+      route[i].wagons.forEach(w=>{ rest.forEach(r=>out.push([{trainId:route[i].id,wagonId:w.id},...r])); });
+      return out;
+    }
+    rec(0).forEach(legs=>opts.push({route, legs, cost:routeCost(route)}));
+  });
+  return opts;
+}
 
-/* ---------- Capacity check ---------- */
+/* ---------- Capacity (per-wagon and per-train aggregate) ---------- */
 function checkCapacity(order, legs, usage){
   for(const leg of legs){
     const w = wagonOf(leg.trainId, leg.wagonId);
@@ -231,17 +280,16 @@ function checkCapacity(order, legs, usage){
     if(u.weight + order.weight > w.maxWeight + 1e-9)
       return {ok:false, reason:`Weight capacity exceeded on wagon ${leg.wagonId}: order requires ${order.weight}t; remaining wagon capacity ${(w.maxWeight-u.weight).toFixed(1)}t.`};
     if(u.length + order.length > w.maxLength + 1e-9)
-      return {ok:false, reason:`Length capacity exceeded on wagon ${leg.wagonId}: order requires ${order.length}m; remaining wagon length ${(w.maxLength-u.length).toFixed(1)}m.`};
+      return {ok:false, reason:`Length capacity exceeded on wagon ${leg.wagonId}: order requires ${order.length.toFixed(2)}m; remaining wagon length ${(w.maxLength-u.length).toFixed(2)}m.`};
   }
-  const trainTouch = {};
-  legs.forEach(leg=>{trainTouch[leg.trainId]=true;});
-  for(const trainId in trainTouch){
+  const touched = {}; legs.forEach(l=>touched[l.trainId]=true);
+  for(const trainId in touched){
     const tr = trainById[trainId];
     const tu = usage.trains[trainId] || {weight:0,length:0};
-    if(tu.weight + order.weight > tr.trainMaxWeight + 1e-9)
-      return {ok:false, reason:`Train-level weight capacity would be exceeded on ${tr.name}.`};
-    if(tu.length + order.length > tr.trainMaxLength + 1e-9)
-      return {ok:false, reason:`Train-level length capacity would be exceeded on ${tr.name}.`};
+    if(tu.weight + order.weight > tr.maxWeight + 1e-9)
+      return {ok:false, reason:`Train-level weight capacity would be exceeded on ${tr.id} (${(tr.maxWeight-tu.weight).toFixed(1)}t remaining).`};
+    if(tu.length + order.length > tr.maxLength + 1e-9)
+      return {ok:false, reason:`Train-level length capacity would be exceeded on ${tr.id} (${(tr.maxLength-tu.length).toFixed(2)}m remaining).`};
   }
   return {ok:true};
 }
@@ -259,205 +307,215 @@ function applyUsage(usage, order, legs, sign){
     usage.trains[trainId].length += sign*order.length;
   });
 }
-function freshUsage(){return {wagons:{},trains:{}};}
+function freshUsage(){ return {wagons:{}, trains:{}}; }
+
+function isComplete(order, assignEntry){
+  if(!assignEntry) return false;
+  return !!matchingRoute(order, assignEntry.legs);
+}
+function occupantsOf(assignMap, wagonId){
+  return Object.keys(assignMap).filter(oid=>Object.values(assignMap[oid].legs).includes(wagonId));
+}
+function computeBreakdown(assignMap){
+  let revenue=0, cost=0, penalty=0, accepted=0;
+  orders.forEach(o=>{
+    const a = assignMap[o.id];
+    if(isComplete(o, a)){
+      const route = matchingRoute(o, a.legs);
+      revenue += o.revenue; cost += routeCost(route); accepted++;
+    } else {
+      penalty += PENALTY_COST;
+    }
+  });
+  return {revenue, cost, penalty, profit:revenue-cost-penalty, accepted};
+}
 
 /* ---------- Player state ---------- */
 let playerUsage = freshUsage();
-let playerAssign = {}; // orderId -> {legs, routeIdx}
+let playerAssign = {}; // orderId -> {legs:{trainId:wagonId}}
 let selectedOrderId = null;
-let selectedWagonChoice = {}; // routeIdx-legIdx -> wagonId (per order, transient in detail panel)
-let timeLeft = 30;
+let timeLeft = GAME_DURATION_SECONDS;
 let timerHandle = null;
 let ended = false;
 
-/* ---------- Optimal solver (branch & bound, runs once at load) ---------- */
+/* ---------- Optimal solver (brute force over the small option space) ---------- */
 function solveOptimal(){
-  let best = {profit:0, assign:{}};
+  const totalPenalty = orders.length * PENALTY_COST;
+  let best = {profit:-Infinity, assign:{}};
   const usage = freshUsage();
   const assign = {};
-  function feasibleOptions(order){
-    return orderOptions[order.id].opts.filter(o=>o.timeOk);
-  }
-  const revSum=[]; let running=0;
-  for(let i=orders.length-1;i>=0;i--){running+=orders[i].revenue; revSum[i]=running;}
   function dfs(i, profit){
-    if(profit + (revSum[i]||0) <= best.profit) return;
     if(i===orders.length){
       if(profit>best.profit){ best={profit, assign:JSON.parse(JSON.stringify(assign))}; }
       return;
     }
     const order = orders[i];
-    const opts = feasibleOptions(order);
-    for(const opt of opts){
+    for(const opt of feasibleOptionsForOrder(order)){
       const chk = checkCapacity(order, opt.legs, usage);
       if(chk.ok){
         applyUsage(usage, order, opt.legs, 1);
-        assign[order.id]={legs:opt.legs, routeIdx:opt.routeIdx};
-        dfs(i+1, profit+order.revenue);
+        assign[order.id] = {legs:Object.fromEntries(opt.legs.map(l=>[l.trainId,l.wagonId]))};
+        dfs(i+1, profit + order.revenue - opt.cost + PENALTY_COST);
         delete assign[order.id];
         applyUsage(usage, order, opt.legs, -1);
       }
     }
-    dfs(i+1, profit);
+    dfs(i+1, profit); // reject
   }
-  dfs(0,0);
+  dfs(0, -totalPenalty);
   return best;
 }
 const optimal = solveOptimal();
 
 /* ---------- Rendering ---------- */
+function showFeedback(msg, kind){
+  const f = document.getElementById('feedbackBar');
+  f.textContent = msg;
+  f.className = kind==='ok'?'ok':(kind==='err'?'err':'');
+}
 function routeLabel(route){
-  return route.map(t=>t.name.replace('Train ','T')).join(' → ') + ' (' + route.map(t=>t.from).concat([route[route.length-1].to]).join(' → ') + ')';
+  return route.map(t=>t.id).join(' → ') + ' (' + route.map(t=>city(t.from)).concat([city(route[route.length-1].to)]).join(' → ') + ')';
 }
 function renderOrders(){
   const el = document.getElementById('orderList');
   el.innerHTML='';
   orders.forEach(o=>{
+    const a = playerAssign[o.id];
+    const complete = isComplete(o, a);
+    const partial = a && !complete;
     const div=document.createElement('div');
-    div.className='order-card'+(o.id===selectedOrderId?' selected':'')+(playerAssign[o.id]?' assigned':'');
-    const assign = playerAssign[o.id];
-    let routeTxt='';
-    if(assign){
-      routeTxt = assign.legs.map(l=>l.trainId+'/'+l.wagonId).join(' → ');
+    div.className='order-card'+(o.id===selectedOrderId?' selected':'')+(complete?' complete':'')+(partial?' partial':'');
+    let statusTxt;
+    if(complete){
+      const route = matchingRoute(o, a.legs);
+      statusTxt = `Routed via ${routeLabel(route)} — net €${(o.revenue-routeCost(route)).toFixed(1)}`;
+    } else if(partial){
+      statusTxt = `Partial: ${Object.keys(a.legs).length} leg(s) assigned — needs the rest of the route`;
+    } else {
+      statusTxt = `Unassigned — €${PENALTY_COST} penalty if rejected`;
     }
     div.innerHTML = `
-      <div class="order-top"><span>${o.id}: ${o.origin} → ${o.destination}</span><span>&euro;${o.revenue}</span></div>
+      <div class="order-top"><span>${o.id}: ${city(o.origin)} → ${city(o.destination)}</span><span>${ICON.revenue} €${o.revenue}</span></div>
       <div class="order-meta">
-        <span>${o.weight}t</span><span>${o.length}m</span>
-        <span>ready ${fmt(o.ready)}</span><span>due ${fmt(o.due)}</span>
+        <span>${ICON.weight} ${o.weight}t</span><span>${ICON.length} ${o.length.toFixed(2)}m</span>
+        <span>${ICON.ready} ${fmtTime(o.ready)}</span><span>${ICON.due} ${fmtTime(o.due)}</span>
       </div>
-      <div class="status">${assign? 'Assigned: '+routeTxt : 'Unassigned'}</div>
+      <div class="status">${statusTxt}</div>
     `;
-    div.onclick=()=>{ if(ended) return; selectedOrderId=o.id; selectedWagonChoice={}; renderAll(); };
+    div.onclick=()=>{ if(ended) return; selectedOrderId = (selectedOrderId===o.id? null : o.id); renderAll(); };
     el.appendChild(div);
   });
 }
-function renderTrains(){
-  const el = document.getElementById('trainList');
-  el.innerHTML='';
-  trains.forEach(tr=>{
-    const div=document.createElement('div');
-    div.className='train-card';
-    const tu = playerUsage.trains[tr.id]||{weight:0,length:0};
-    div.innerHTML=`
-      <div class="train-top"><span>${tr.name}</span><span class="train-time">${tr.from} → ${tr.to}</span></div>
-      <div class="train-time">dep ${fmt(tr.dep)} &middot; arr ${fmt(tr.arr)} &middot; train cap ${tu.weight.toFixed(1)}/${tr.trainMaxWeight}t, ${tu.length.toFixed(1)}/${tr.trainMaxLength}m</div>
-      ${tr.wagons.map(w=>{
-        const u = playerUsage.wagons[w.id]||{weight:0,length:0,count:0};
-        const wPct=Math.min(100,u.weight/w.maxWeight*100), lPct=Math.min(100,u.length/w.maxLength*100);
-        return `<div class="wagon-row">
-          <div class="wname"><span>${w.id}</span><span>${u.count}/${w.maxOrders} orders</span></div>
-          <div class="barwrap">
-            <div class="b"><div class="barlabel">wt ${u.weight.toFixed(1)}/${w.maxWeight}t</div><div class="bar"><div class="fill${wPct>=100?' full':''}" style="width:${wPct}%"></div></div></div>
-            <div class="b"><div class="barlabel">len ${u.length.toFixed(1)}/${w.maxLength}m</div><div class="bar"><div class="fill${lPct>=100?' full':''}" style="width:${lPct}%"></div></div></div>
-          </div>
-        </div>`;
-      }).join('')}
-    `;
-    el.appendChild(div);
-  });
-}
-function renderDetail(){
-  const el = document.getElementById('detail');
-  if(!selectedOrderId){
-    el.innerHTML = '<h2>Assignment</h2><div class="empty">Select an order on the left to see feasible routes.</div>';
-    return;
+function renderTrainCard(tr, selOrder){
+  let relevant = true, timeInfeasible = false, timeMsg='', route=null;
+  if(selOrder){
+    route = routeForTrain(selOrder, tr.id);
+    relevant = !!route;
+    if(relevant){
+      const tc = routeTimeFeasible(selOrder, route);
+      if(!tc.ok){ timeInfeasible=true; timeMsg=timeReasonMessage(tc.reason, selOrder); }
+    }
   }
-  const order = orders.find(o=>o.id===selectedOrderId);
-  const info = orderOptions[order.id];
-  let html = `<h2>Assignment &mdash; ${order.id}</h2>
-    <div class="order-meta" style="margin-bottom:8px;">
-      <span>${order.origin} → ${order.destination}</span><span>${order.weight}t</span><span>${order.length}m</span>
-      <span>&euro;${order.revenue}</span><span>ready ${fmt(order.ready)}</span><span>due ${fmt(order.due)}</span>
+  const disabled = selOrder && !relevant;
+  const tu = playerUsage.trains[tr.id] || {weight:0,length:0};
+  let html = `<div class="train-head">${ICON.train} ${tr.id}: ${city(tr.from)} → ${city(tr.to)}</div>
+    <div class="train-sub"><span>${ICON.ready} dep ${fmtTime(tr.dep)}</span><span>${ICON.due} arr ${fmtTime(tr.arr)}</span><span>${ICON.cost} €${tr.costPerOrder}/order</span></div>
+    <div class="train-agg">Train capacity used: ${tu.weight.toFixed(1)}/${tr.maxWeight}t &middot; ${tu.length.toFixed(2)}/${tr.maxLength}m</div>`;
+  if(selOrder && relevant && timeInfeasible){
+    html += `<div class="time-banner">${ICON.due} ${timeMsg}</div>`;
+  }
+  html += `<div class="wagons-row">`;
+  tr.wagons.forEach(w=>{
+    const u = playerUsage.wagons[w.id] || {weight:0,length:0,count:0};
+    const occ = occupantsOf(playerAssign, w.id);
+    const mine = selOrder && playerAssign[selOrder.id] && playerAssign[selOrder.id].legs[tr.id]===w.id;
+    let cls='wagon-chip';
+    if(!selOrder){ cls+=' neutral'; }
+    else if(disabled || timeInfeasible){ cls+=' disabled'; }
+    else if(mine){ cls+=' mine'; }
+    else {
+      const preview = checkCapacity(selOrder, [{trainId:tr.id,wagonId:w.id}], playerUsage);
+      cls += preview.ok ? ' ok' : ' full';
+    }
+    html += `<div class="${cls}" data-train="${tr.id}" data-wagon="${w.id}">
+      <div class="wtitle"><span>${ICON.wagon} ${w.id}</span>${mine?'<span>✓</span>':''}</div>
+      <div class="wcap">type ${w.type} &middot; ${ICON.weight} ${(w.maxWeight-u.weight).toFixed(1)}/${w.maxWeight}t free<br>
+        ${ICON.length} ${(w.maxLength-u.length).toFixed(2)}/${w.maxLength}m free &middot; ${ICON.orders} ${u.count}/${w.maxOrders}</div>
+      ${occ.length? `<div class="occupants">${occ.map(oid=>`<span class="occ-tag${oid===selectedOrderId?' me':''}">${oid}</span>`).join('')}</div>`:''}
     </div>`;
-  if(info.routes.length===0){
-    html += `<div class="empty">No service sequence connects ${order.origin} to ${order.destination}.</div>`;
-  }
-  info.routes.forEach((route,ri)=>{
-    const tcheck = routeTimeFeasible(order, route);
-    html += `<div class="route-block"><div class="route-title">${routeLabel(route)}${tcheck.ok?'':' &mdash; <span style="color:var(--bad)">time infeasible</span>'}</div>`;
-    route.forEach((tr,li)=>{
-      const key = ri+'-'+li;
-      if(selectedWagonChoice[key]===undefined) selectedWagonChoice[key]=tr.wagons[0].id;
-      html += `<div class="leg"><div class="leg-name">${tr.name}: ${tr.from} → ${tr.to} (dep ${fmt(tr.dep)}, arr ${fmt(tr.arr)})</div>
-        <div class="wagon-choices">`;
-      tr.wagons.forEach(w=>{
-        const u = playerUsage.wagons[w.id]||{weight:0,length:0,count:0};
-        const sel = selectedWagonChoice[key]===w.id;
-        html += `<div class="wagon-choice${sel?' sel':''}" data-key="${key}" data-wagon="${w.id}">${w.id} (${(w.maxWeight-u.weight).toFixed(1)}t / ${(w.maxLength-u.length).toFixed(1)}m / ${w.maxOrders-u.count} ord free)</div>`;
-      });
-      html += `</div></div>`;
-    });
-    html += `<button class="assign-btn" data-route="${ri}">Assign via this route</button>`;
-    html += `</div>`;
   });
-  if(playerAssign[order.id]){
-    html += `<button class="unassign-btn" id="unassignBtn">Remove current assignment</button>`;
-  }
-  html += `<div id="feedback"></div>`;
-  el.innerHTML = html;
+  html += `</div>`;
 
-  el.querySelectorAll('.wagon-choice').forEach(elm=>{
-    elm.onclick=()=>{ if(ended) return; selectedWagonChoice[elm.dataset.key]=elm.dataset.wagon; renderDetail(); };
+  const card = document.createElement('div');
+  card.className = 'train-card'+(disabled?' disabled':'');
+  card.innerHTML = html;
+  if(selOrder && relevant && !timeInfeasible){
+    card.querySelectorAll('.wagon-chip').forEach(chip=>{
+      chip.onclick=()=>{ if(ended) return; toggleWagon(selOrder, trainById[chip.dataset.train], wagonOf(chip.dataset.train, chip.dataset.wagon)); };
+    });
+  }
+  return card;
+}
+function renderGroups(){
+  const el = document.getElementById('groupList');
+  el.innerHTML='';
+  const selOrder = selectedOrderId ? orderById[selectedOrderId] : null;
+  trains.forEach(tr=>{
+    el.appendChild(renderTrainCard(tr, selOrder));
   });
-  el.querySelectorAll('.assign-btn').forEach(btn=>{
-    btn.onclick=()=>{
-      if(ended) return;
-      const ri = parseInt(btn.dataset.route);
-      const route = info.routes[ri];
-      const legs = route.map((tr,li)=>({trainId:tr.id, wagonId:selectedWagonChoice[ri+'-'+li]}));
-      attemptAssign(order, ri, legs);
-    };
-  });
-  const ub = document.getElementById('unassignBtn');
-  if(ub) ub.onclick=()=>{ if(ended) return; doUnassign(order.id); renderAll(); };
 }
-function showFeedback(msg, ok){
-  const f = document.getElementById('feedback');
-  if(!f) return;
-  f.textContent = msg;
-  f.className = ok?'ok':'err';
-}
-function doUnassign(orderId){
-  const a = playerAssign[orderId];
-  if(!a) return;
-  const order = orders.find(o=>o.id===orderId);
-  applyUsage(playerUsage, order, a.legs, -1);
-  delete playerAssign[orderId];
-}
-function attemptAssign(order, routeIdx, legs){
-  const tcheck = routeTimeFeasible(order, orderOptions[order.id].routes[routeIdx]);
+function toggleWagon(order, train, wagon){
+  const a = playerAssign[order.id] || {legs:{}};
+  if(a.legs[train.id]===wagon.id){
+    applyUsage(playerUsage, order, [{trainId:train.id,wagonId:wagon.id}], -1);
+    delete a.legs[train.id];
+    if(Object.keys(a.legs).length===0) delete playerAssign[order.id];
+    showFeedback(`Removed ${order.id} from ${wagon.id}.`, 'ok');
+    renderAll();
+    return;
+  }
+  const newIds = [...Object.keys(a.legs), train.id];
+  if(!subsetOfSomeRoute(order, newIds)){
+    showFeedback(`Combining these services doesn't form a valid route for ${order.id}. Remove the existing assignment first if you want to switch routes.`, 'err');
+    return;
+  }
+  const route = routeForTrain(order, train.id);
+  const tcheck = routeTimeFeasible(order, route);
   if(!tcheck.ok){
-    let msg;
-    if(tcheck.reason==='ready') msg = `Order not ready before this train's departure.`;
-    else if(tcheck.reason==='connection') msg = `No valid connection: the next train departs before the previous one arrives.`;
-    else msg = `Arrival would be after the order's due time (${fmt(order.due)}).`;
-    showFeedback(msg, false);
+    showFeedback(timeReasonMessage(tcheck.reason, order), 'err');
     return;
   }
-  const hadPrev = playerAssign[order.id];
-  if(hadPrev) applyUsage(playerUsage, order, hadPrev.legs, -1);
-  const chk = checkCapacity(order, legs, playerUsage);
+  const priorWagonOnTrain = a.legs[train.id]; // switching wagons within the same train: free the old one first
+  if(priorWagonOnTrain){
+    applyUsage(playerUsage, order, [{trainId:train.id,wagonId:priorWagonOnTrain}], -1);
+  }
+  const chk = checkCapacity(order, [{trainId:train.id,wagonId:wagon.id}], playerUsage);
   if(!chk.ok){
-    if(hadPrev) applyUsage(playerUsage, order, hadPrev.legs, 1);
-    showFeedback(chk.reason, false);
+    if(priorWagonOnTrain) applyUsage(playerUsage, order, [{trainId:train.id,wagonId:priorWagonOnTrain}], 1);
+    showFeedback(chk.reason, 'err');
     return;
   }
-  applyUsage(playerUsage, order, legs, 1);
-  playerAssign[order.id] = {legs, routeIdx};
-  showFeedback('Order assigned.', true);
-  renderOrders();
-  renderTrains();
+  applyUsage(playerUsage, order, [{trainId:train.id,wagonId:wagon.id}], 1);
+  playerAssign[order.id] = a;
+  a.legs[train.id] = wagon.id;
+  if(isComplete(order, a)){
+    showFeedback(`${order.id} fully routed via ${routeLabel(route)}. Net €${(order.revenue-routeCost(route)).toFixed(1)}.`, 'ok');
+  } else {
+    showFeedback(`Leg assigned. Assign the remaining leg on this route to complete ${order.id}.`, 'ok');
+  }
+  renderAll();
 }
 function renderHUD(){
   document.getElementById('timer').textContent = timeLeft;
-  document.getElementById('timer').className = timeLeft<=10?'val low':'val';
-  const profit = Object.keys(playerAssign).reduce((s,oid)=>s+orders.find(o=>o.id===oid).revenue,0);
-  document.getElementById('profit').textContent = '€'+profit;
-  document.getElementById('acceptedCount').textContent = Object.keys(playerAssign).length+'/'+orders.length;
+  document.getElementById('timer').className = timeLeft<=15?'val low':'val';
+  const b = computeBreakdown(playerAssign);
+  const profitEl = document.getElementById('profit');
+  profitEl.textContent = '€'+b.profit.toFixed(1);
+  profitEl.className = 'val'+(b.profit<0?' neg':'');
+  document.getElementById('acceptedCount').textContent = b.accepted+'/'+orders.length;
 }
 function renderAll(){
-  renderOrders(); renderTrains(); renderDetail(); renderHUD();
+  renderOrders(); renderGroups(); renderHUD();
 }
 
 /* ---------- Timer / lifecycle ---------- */
@@ -466,6 +524,8 @@ function startGame(){
   document.getElementById('startScreen').style.display='none';
   document.getElementById('main').classList.add('show');
   document.getElementById('hud').style.display='flex';
+  timeLeft = GAME_DURATION_SECONDS;
+  document.getElementById('timer').textContent = timeLeft;
   renderAll();
   timerHandle = setInterval(()=>{
     timeLeft--;
@@ -476,53 +536,59 @@ function startGame(){
 function endGame(){
   ended = true;
   document.getElementById('main').classList.remove('show');
-  const playerProfit = Object.keys(playerAssign).reduce((s,oid)=>s+orders.find(o=>o.id===oid).revenue,0);
-  const playerAccepted = Object.keys(playerAssign).length;
-  const optProfit = optimal.profit;
-  const optAccepted = Object.keys(optimal.assign).length;
-  const pct = optProfit>0 ? (playerProfit/optProfit*100) : 100;
+  const pb = computeBreakdown(playerAssign);
+  const ob = computeBreakdown(optimal.assign);
+  const pct = ob.profit>0 ? (pb.profit/ob.profit*100) : 100;
 
-  const missed = orders.filter(o=>optimal.assign[o.id] && !playerAssign[o.id]);
-  const extra = orders.filter(o=>playerAssign[o.id] && !optimal.assign[o.id]);
+  const missed = orders.filter(o=>isComplete(o, optimal.assign[o.id]) && !isComplete(o, playerAssign[o.id]));
+  const extra = orders.filter(o=>isComplete(o, playerAssign[o.id]) && !isComplete(o, optimal.assign[o.id]));
   let explainItems = [];
-  missed.slice(0,2).forEach(o=>{
-    let blocker=null;
-    for(const opt of orderOptions[o.id].opts){
-      if(!opt.timeOk) continue;
+  missed.slice(0,3).forEach(o=>{
+    const route = matchingRoute(o, optimal.assign[o.id].legs);
+    const cost = routeCost(route);
+    const net = o.revenue - cost;
+    const swing = net + PENALTY_COST;
+    let blockerTxt = '';
+    for(const opt of feasibleOptionsForOrder(o)){
+      let blocker=null;
       for(const leg of opt.legs){
-        const occupantIds = Object.keys(playerAssign).filter(oid=> playerAssign[oid].legs.some(l=>l.wagonId===leg.wagonId));
-        if(occupantIds.length){
-          blocker = {wagonId:leg.wagonId, occupants:occupantIds};
-          break;
-        }
+        const occ = occupantsOf(playerAssign, leg.wagonId);
+        if(occ.length){ blocker = {wagonId:leg.wagonId, occupants:occ}; break; }
       }
-      if(blocker) break;
+      if(blocker){
+        const names = blocker.occupants.map(id=>id+' (€'+orderById[id].revenue+')').join(', ');
+        blockerTxt = ` In your plan, wagon <b>${blocker.wagonId}</b> was occupied by ${names}.`;
+        break;
+      }
     }
-    if(blocker){
-      const names = blocker.occupants.map(id=>id+' (€'+orders.find(x=>x.id===id).revenue+')').join(', ');
-      explainItems.push(`<div class="item">You did not accept <b>${o.id}</b> (€${o.revenue}). The optimal plan accepted it, using capacity on wagon <b>${blocker.wagonId}</b> that in your plan was occupied by ${names}.</div>`);
-    } else {
-      explainItems.push(`<div class="item">You did not accept <b>${o.id}</b> (€${o.revenue}), which the optimal plan was able to accept.</div>`);
-    }
+    explainItems.push(`<div class="item">You rejected <b>${o.id}</b> (€${o.revenue} revenue, €${PENALTY_COST} penalty paid). The optimal plan routed it via ${routeLabel(route)} (cost €${cost}), netting €${net.toFixed(1)} and avoiding the penalty &mdash; a €${swing.toFixed(1)} swing.${blockerTxt}</div>`);
   });
-  extra.slice(0,2).forEach(o=>{
-    explainItems.push(`<div class="item">You accepted <b>${o.id}</b> (€${o.revenue}), but the optimal plan rejected it in favor of a more profitable combination elsewhere.</div>`);
+  extra.slice(0,3).forEach(o=>{
+    const route = matchingRoute(o, playerAssign[o.id].legs);
+    const net = o.revenue - routeCost(route);
+    explainItems.push(`<div class="item">You routed <b>${o.id}</b> via ${routeLabel(route)} (net €${net.toFixed(1)}), but the optimal plan rejected it (paying its €${PENALTY_COST} penalty instead) to keep capacity free for a more profitable combination.</div>`);
   });
   if(explainItems.length===0){
-    explainItems.push(`<div class="item">Your plan matched the optimal set of accepted orders — well played!</div>`);
+    explainItems.push(`<div class="item">Your plan matched the optimal set of routed orders — well played!</div>`);
+  }
+
+  function breakdownRows(b){
+    return `
+      <div class="result-row"><span class="k">Orders routed</span><span class="v">${b.accepted} / ${orders.length}</span></div>
+      <div class="result-row"><span class="k">${ICON.revenue} Revenue</span><span class="v">€${b.revenue.toFixed(1)}</span></div>
+      <div class="result-row"><span class="k">${ICON.cost} Transport &amp; transshipment cost</span><span class="v">&minus;€${b.cost.toFixed(1)}</span></div>
+      <div class="result-row"><span class="k">${ICON.penalty} Rejection penalties</span><span class="v">&minus;€${b.penalty.toFixed(1)}</span></div>
+      <div class="result-row total"><span class="k">Profit</span><span class="v">€${b.profit.toFixed(1)}</span></div>
+    `;
   }
 
   const html = `
-  <div style="max-width:760px;margin:40px auto;padding:26px;background:var(--panel);border:1px solid var(--border);border-radius:12px;">
+  <div style="max-width:760px;margin:24px auto;padding:26px;background:var(--panel);border:1px solid var(--border);border-radius:12px;">
     <h2>Your dispatching plan</h2>
-    <div class="result-row"><span class="k">Accepted orders</span><span class="v">${playerAccepted} / ${orders.length}</span></div>
-    <div class="result-row"><span class="k">Rejected orders</span><span class="v">${orders.length-playerAccepted} / ${orders.length}</span></div>
-    <div class="result-row"><span class="k">Profit</span><span class="v">€${playerProfit}</span></div>
+    ${breakdownRows(pb)}
 
     <h2 style="margin-top:22px;">Optimal dispatching plan</h2>
-    <div class="result-row"><span class="k">Accepted orders</span><span class="v">${optAccepted} / ${orders.length}</span></div>
-    <div class="result-row"><span class="k">Rejected orders</span><span class="v">${orders.length-optAccepted} / ${orders.length}</span></div>
-    <div class="result-row"><span class="k">Profit</span><span class="v">€${optProfit}</span></div>
+    ${breakdownRows(ob)}
 
     <div id="pctBig">${pct.toFixed(1)}%</div>
     <div id="pctSub">of optimal profit achieved</div>
@@ -535,8 +601,8 @@ function endGame(){
     <div class="takeaway">
       <b>This is the IRFDP.</b><br>
       Finding a feasible route for one order is easy. Finding the most profitable combination of
-      routes for thousands of competing orders &mdash; while respecting train, wagon, spatial, temporal,
-      and network constraints &mdash; is the challenge.
+      routes for many competing orders &mdash; while respecting train, wagon, spatial, temporal,
+      and network constraints, and weighing transport cost against rejection penalties &mdash; is the challenge.
     </div>
 
     <button id="restartBtn">Play again</button>
