@@ -102,6 +102,19 @@
     border:1px solid var(--border);border-radius:12px;}
   #startScreen h2,#endScreen h2{margin-top:0;}
   #startScreen ul{color:var(--muted);font-size:14px;line-height:1.6;padding-left:20px;}
+  #tutorialHighlight{position:fixed;pointer-events:none;border:3px solid var(--gold);border-radius:10px;
+    box-shadow:0 0 0 9999px rgba(0,0,0,.6), 0 0 16px var(--gold);transition:top .25s ease,left .25s ease,width .25s ease,height .25s ease;
+    z-index:200;display:none;}
+  #tutorialTooltip{position:fixed;z-index:201;background:var(--panel);border:1px solid var(--gold);border-radius:10px;
+    padding:11px 13px;width:230px;max-width:calc(100vw - 24px);font-size:12.5px;box-shadow:0 6px 20px rgba(0,0,0,.5);
+    transition:top .25s ease,left .25s ease;display:none;}
+  #tutorialTooltip .tt-step{font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
+  #tutorialTooltip .tt-text{color:var(--text);line-height:1.45;}
+  #tutorialTooltip .tt-actions{margin-top:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  #tutorialTooltip .tt-next{display:none;background:var(--gold);color:#241c00;border:none;border-radius:6px;
+    padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;}
+  #tutorialTooltip .tt-skip{background:transparent;border:none;color:var(--muted);font-size:11px;
+    text-decoration:underline;cursor:pointer;padding:0;}
   #startBtn{background:var(--accent);color:#04121e;border:none;border-radius:8px;padding:14px 22px;
     font-size:15px;font-weight:700;cursor:pointer;margin-top:10px;width:100%;max-width:280px;}
   #endScreen{display:none;}
@@ -149,14 +162,10 @@
 
 <div id="startScreen">
   <h2>Maximize profit before time runs out.</h2>
-  <p>Six orders need to move from Hannover or Ludwigshafen to Verona. You can send each one directly,
-  or via the shared hub in München &mdash; but capacities are all limited.</p>
-  <ul>
-    <li>Tap an <span class="icon">📦</span><b>order</b>, then tap a highlighted connection on the <span class="icon">🗺️</span><b>map</b> to pick a wagon.</li>
-    <li>Every leg costs money, and changing trains at München costs an extra transshipment fee.</li>
-    <li>Any order you never fully route costs you a fixed <b>rejection penalty</b> at the end.</li>
-    <li>Goal: maximize <b>profits (revenue minus costs)</b>.</li>
-  </ul>
+  <p>Six orders need to move from Hannover or Ludwigshafen to Verona &mdash; directly, or via the shared hub
+  in München. Wagon space is limited, so not every order may fit.</p>
+  <p>We'll walk you through dispatching your first order right on the game screen &mdash; the clock only
+  starts once you're done.</p>
   <button id="startBtn">Start</button>
 </div>
 
@@ -178,6 +187,16 @@
 </div>
 
 <div id="endScreen"></div>
+
+<div id="tutorialHighlight"></div>
+<div id="tutorialTooltip">
+  <div class="tt-step"></div>
+  <div class="tt-text"></div>
+  <div class="tt-actions">
+    <button class="tt-next" id="tutorialNextBtn">Got it &rarr;</button>
+    <button class="tt-skip" id="tutorialSkipBtn">Skip walkthrough</button>
+  </div>
+</div>
 
 <script>
 /* ---------- Config ---------- */
@@ -383,6 +402,97 @@ let timeLeft = GAME_DURATION_SECONDS;
 let timerHandle = null;
 let ended = false;
 
+/* ---------- Guided walkthrough (runs once, before the timer starts) ---------- */
+let tutorialActive = false;
+let tutorialStep = 0;
+const TUTORIAL_ORDER_ID = 'O4';
+const TUTORIAL_TRAIN_ID = 'Train E';
+const TUTORIAL_WAGON_ID = trainById[TUTORIAL_TRAIN_ID].wagons[0].id;
+const TUTORIAL_STEPS = [
+  { label:'1 &middot; Select an order', text:`Tap order ${TUTORIAL_ORDER_ID} to start routing it.`,
+    done:()=>selectedOrderId===TUTORIAL_ORDER_ID,
+    target:()=>document.querySelector(`#orderList [data-order-id="${TUTORIAL_ORDER_ID}"]`) },
+  { label:'Tip', info:true,
+    text:`The selected order's full details &mdash; weight, length, status &mdash; show up here, between the orders list and the map.`,
+    target:()=>document.getElementById('selectedOrderBar') },
+  { label:'Tip', info:true,
+    text:`The map highlights every connection that's temporally feasible for this order. Greyed-out or dashed connections can't get it there in time.`,
+    target:()=>document.querySelector('#groupList .network-map') },
+  { label:'2 &middot; Choose a connection', text:`Tap the highlighted ${TUTORIAL_TRAIN_ID} connection &mdash; it runs straight from Ludwigshafen to Verona.`,
+    done:()=>expandedTrainId===TUTORIAL_TRAIN_ID,
+    target:()=>document.querySelector(`rect.map-label-hit[data-train="${TUTORIAL_TRAIN_ID}"]`) },
+  { label:'3 &middot; Pick a wagon', text:`Tap this wagon to assign ${TUTORIAL_ORDER_ID} to it and complete the route.`,
+    done:()=>!!(playerAssign[TUTORIAL_ORDER_ID] && playerAssign[TUTORIAL_ORDER_ID].legs[TUTORIAL_TRAIN_ID]===TUTORIAL_WAGON_ID),
+    target:()=>document.querySelector(`#expandedWagonsPanel [data-wagon-id="${TUTORIAL_WAGON_ID}"]`) },
+];
+function startTutorial(){
+  tutorialActive = true;
+  tutorialStep = 0;
+  showTutorialStep();
+}
+function advanceTutorialStep(){
+  tutorialStep++;
+  showTutorialStep();
+}
+function showTutorialStep(){
+  if(!tutorialActive) return;
+  const step = TUTORIAL_STEPS[tutorialStep];
+  if(!step){ endTutorial(); return; }
+  const target = step.target();
+  if(!target){ requestAnimationFrame(showTutorialStep); return; }
+  target.scrollIntoView({behavior:'smooth', block:'center'});
+  setTimeout(()=>positionTutorial(target, step), 260);
+}
+function refreshTutorial(){
+  if(!tutorialActive) return;
+  const step = TUTORIAL_STEPS[tutorialStep];
+  const target = step && step.target();
+  if(target) positionTutorial(target, step);
+}
+function positionTutorial(target, step){
+  if(!tutorialActive) return;
+  const hl = document.getElementById('tutorialHighlight');
+  const tip = document.getElementById('tutorialTooltip');
+  const r = target.getBoundingClientRect();
+  const pad = 6;
+  hl.style.display='block';
+  hl.style.left = (r.left-pad)+'px';
+  hl.style.top = (r.top-pad)+'px';
+  hl.style.width = (r.width+pad*2)+'px';
+  hl.style.height = (r.height+pad*2)+'px';
+
+  tip.querySelector('.tt-step').innerHTML = step.label;
+  tip.querySelector('.tt-text').innerHTML = step.text;
+  tip.querySelector('.tt-next').style.display = step.info ? 'inline-block' : 'none';
+  tip.style.display='block';
+  const tipW = tip.offsetWidth || 230, tipH = tip.offsetHeight || 90;
+  let top = r.bottom + pad + 10;
+  if(top + tipH > window.innerHeight - 10) top = Math.max(10, r.top - pad - 10 - tipH);
+  let left = r.left + r.width/2 - tipW/2;
+  left = Math.max(10, Math.min(left, window.innerWidth - tipW - 10));
+  tip.style.top = top+'px';
+  tip.style.left = left+'px';
+}
+function tutorialTick(){
+  const step = TUTORIAL_STEPS[tutorialStep];
+  if(step && !step.info && step.done()){
+    tutorialStep++;
+    showTutorialStep();
+    return;
+  }
+  refreshTutorial();
+}
+function endTutorial(){
+  tutorialActive = false;
+  document.getElementById('tutorialHighlight').style.display='none';
+  document.getElementById('tutorialTooltip').style.display='none';
+  beginTimer();
+}
+document.getElementById('tutorialSkipBtn').onclick = endTutorial;
+document.getElementById('tutorialNextBtn').onclick = advanceTutorialStep;
+window.addEventListener('resize', ()=>{ if(tutorialActive) refreshTutorial(); });
+window.addEventListener('scroll', ()=>{ if(tutorialActive) refreshTutorial(); }, true);
+
 /* ---------- Optimal solver (brute force over the small option space) ---------- */
 function solveOptimal(){
   const totalPenalty = orders.length * PENALTY_COST;
@@ -450,6 +560,7 @@ function renderOrders(){
     const partial = a && !complete;
     const div=document.createElement('div');
     div.className='order-card'+(o.id===selectedOrderId?' selected':'')+(complete?' complete':'')+(partial?' partial':'');
+    div.dataset.orderId = o.id;
     div.innerHTML = `
       <div class="order-top"><span>${o.id}: ${city(o.origin)} → ${city(o.destination)}</span><span>${ICON.revenue} €${o.revenue}</span></div>
       <div class="status">${orderStatusText(o)}</div>
@@ -470,8 +581,6 @@ function renderSelectedBar(){
       <span>${ICON.revenue} €${o.revenue}</span>
       <span>${ICON.weight} ${o.weight}t</span>
       <span>${ICON.length} ${o.length.toFixed(2)}m</span>
-      <span>${ICON.ready} ${fmtTime(o.ready)}</span>
-      <span>${ICON.due} ${fmtTime(o.due)}</span>
       <span class="sob-status">${orderStatusText(o)}</span>
     </div>
     <button class="sob-close" id="deselectOrderBtn">✕</button>
@@ -519,6 +628,7 @@ function renderWagonChip(order, train, wagon){
   }
   const div = document.createElement('div');
   div.className = cls;
+  div.dataset.wagonId = wagon.id;
   div.innerHTML = `
     <div class="wtitle"><span>${ICON.wagon} ${wagon.id}</span></div>
     <div class="wfit">${label}</div>
@@ -651,6 +761,7 @@ function renderHUD(){
 }
 function renderAll(){
   renderOrders(); renderMap(); renderHUD(); renderSelectedBar();
+  if(tutorialActive) tutorialTick();
 }
 
 /* ---------- Timer / lifecycle ---------- */
@@ -676,6 +787,9 @@ function startGame(){
   document.getElementById('timer').textContent = timeLeft;
   renderAll();
   syncHeaderHeight();
+  startTutorial();
+}
+function beginTimer(){
   timerHandle = setInterval(()=>{
     timeLeft--;
     renderHUD();
@@ -683,7 +797,7 @@ function startGame(){
   },1000);
 }
 document.getElementById('finishBtn').onclick = ()=>{
-  if(ended) return;
+  if(ended || tutorialActive) return;
   const b = computeBreakdown(playerAssign);
   const sure = confirm(`Finish the game now with your current plan?\n\nRouted: ${b.accepted}/${orders.length}\nNet profit so far: €${b.profit.toFixed(1)}\n\nThis cannot be undone.`);
   if(sure){ clearInterval(timerHandle); endGame(); }
