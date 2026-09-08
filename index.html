@@ -62,7 +62,7 @@
   #feedbackBar.err{background:#3a1620;color:var(--bad);border-color:var(--bad);}
   #feedbackBar.ok{background:#123321;color:var(--good);border-color:var(--good);}
 
-  .network-map{width:100%;height:auto;display:block;margin-bottom:6px;}
+  .network-map{width:100%;height:auto;max-height:280px;display:block;margin:0 auto 6px;}
   .map-edge{fill:none;stroke-width:3;transition:stroke .15s,stroke-width .15s,opacity .15s;}
   .map-edge.idle{stroke:var(--muted);stroke-width:2.5;opacity:.8;}
   .map-edge.irrelevant{stroke:var(--border);stroke-width:2;opacity:.55;}
@@ -70,20 +70,26 @@
   .map-edge.feasible{stroke:var(--accent);stroke-width:4;cursor:pointer;}
   .map-edge.feasible.next{stroke-width:5;filter:drop-shadow(0 0 5px var(--accent));}
   .map-edge.mine{stroke:var(--good);stroke-width:4;}
+  .map-edge.expanded{stroke:var(--gold);stroke-width:6;filter:drop-shadow(0 0 6px var(--gold));}
   .map-hit{fill:none;stroke:transparent;stroke-width:30;cursor:pointer;}
   .map-label{fill:var(--muted);font-size:12px;text-anchor:middle;cursor:pointer;}
   .map-label-hit{fill:transparent;text-anchor:middle;cursor:pointer;}
   .map-node{fill:var(--panel2);stroke:var(--border);stroke-width:2;}
+  .map-node.origin{stroke:var(--accent);stroke-width:3;}
+  .map-node.destination{stroke:var(--good);stroke-width:3;}
+  .map-node-flag{font-size:13px;text-anchor:middle;pointer-events:none;}
   .map-node-label{fill:var(--text);font-size:13px;font-weight:700;text-anchor:middle;pointer-events:none;}
   .map-hint{font-size:12px;color:var(--muted);text-align:center;padding:8px 4px 2px;}
 
-  .expanded-wagons{margin-top:12px;padding-top:12px;border-top:1px dashed var(--border);}
+  .expanded-wagons{margin-top:12px;padding-top:12px;border-top:1px dashed var(--border);
+    scroll-margin-top:var(--scroll-offset, 88px);}
   .expanded-head{font-size:14px;font-weight:700;margin-bottom:9px;}
   .wagons-row{display:flex;gap:10px;flex-wrap:wrap;}
   .wagon-chip{border:2px solid var(--border);border-radius:9px;padding:11px 13px;font-size:13px;
     background:#101c28;cursor:pointer;flex:1 1 140px;transition:border-color .1s;}
   .wagon-chip .wtitle{font-weight:700;font-size:15px;margin-bottom:5px;}
-  .wagon-chip .wfit{font-size:13px;font-weight:700;color:var(--muted);}
+  .wagon-chip .wfit{font-size:13px;font-weight:700;color:var(--muted);margin-bottom:5px;}
+  .wagon-chip .wcap{color:var(--muted);font-size:12.5px;line-height:1.7;}
   .wagon-chip.ok{border-color:var(--good);}
   .wagon-chip.ok .wfit{color:var(--good);}
   .wagon-chip.full{border-color:var(--bad);opacity:.8;}
@@ -507,10 +513,13 @@ function onEdgeClick(trainId){
     showFeedback(timeReasonMessage(st.tcheck.reason, order), 'err');
     return;
   }
-  expandedTrainId = (expandedTrainId===trainId) ? null : trainId;
+  const wasExpanded = expandedTrainId===trainId;
+  expandedTrainId = wasExpanded ? null : trainId;
   renderAll();
+  if(!wasExpanded) scrollToPanel('expandedWagonsPanel');
 }
 function renderWagonChip(order, train, wagon){
+  const u = playerUsage.wagons[wagon.id] || {weight:0,length:0,count:0};
   const occ = occupantsOf(playerAssign, wagon.id);
   const mine = playerAssign[order.id] && playerAssign[order.id].legs[train.id]===wagon.id;
   let cls='wagon-chip', label;
@@ -524,6 +533,8 @@ function renderWagonChip(order, train, wagon){
   div.innerHTML = `
     <div class="wtitle"><span>${ICON.wagon} ${wagon.id}</span></div>
     <div class="wfit">${label}</div>
+    <div class="wcap">${ICON.weight} ${(wagon.maxWeight-u.weight).toFixed(1)}/${wagon.maxWeight}t free<br>
+      ${ICON.length} ${(wagon.maxLength-u.length).toFixed(2)}/${wagon.maxLength}m free &middot; ${ICON.orders} ${u.count}/${wagon.maxOrders}</div>
     ${occ.length? `<div class="occupants">${occ.map(oid=>`<span class="occ-tag${oid===order.id?' me':''}">${oid}</span>`).join('')}</div>`:''}
   `;
   div.onclick = ()=>{ if(ended) return; toggleWagon(order, train, wagon); };
@@ -539,6 +550,7 @@ function renderMap(){
     const st = states[t.id];
     let cls = 'map-edge '+st.state;
     if(st.isNext) cls += ' next';
+    if(t.id===expandedTrainId) cls += ' expanded';
     const d = EDGE_PATH[t.id];
     return `<path class="map-hit" d="${d}" data-train="${t.id}"></path><path class="${cls}" d="${d}"></path>`;
   }).join('');
@@ -550,10 +562,17 @@ function renderMap(){
       <text class="map-label" data-train="${t.id}" x="${p.x}" y="${p.y}">${t.id}${badge}</text>`;
   }).join('');
 
-  const nodesSvg = Object.entries(CITY_POS).map(([id,p])=>
-    `<circle class="map-node" cx="${p.x}" cy="${p.y}" r="8"></circle>
-     <text class="map-node-label" x="${p.x}" y="${p.y + (p.y<130 ? -14 : 24)}">${city(id)}</text>`
-  ).join('');
+  const nodesSvg = Object.entries(CITY_POS).map(([id,p])=>{
+    const isOrigin = selOrder && id===selOrder.origin;
+    const isDest = selOrder && id===selOrder.destination;
+    const r = (isOrigin || isDest) ? 12 : 8;
+    const nodeCls = 'map-node'+(isOrigin?' origin':'')+(isDest?' destination':'');
+    const flag = isOrigin ? '🚩' : (isDest ? '🏁' : '');
+    const labelY = p.y + (p.y<130 ? -20 : 28);
+    return `<circle class="${nodeCls}" cx="${p.x}" cy="${p.y}" r="${r}"></circle>
+      ${flag? `<text class="map-node-flag" x="${p.x}" y="${p.y+5}">${flag}</text>` : ''}
+      <text class="map-node-label" x="${p.x}" y="${labelY}">${city(id)}</text>`;
+  }).join('');
 
   let html = `<svg class="network-map" viewBox="0 0 400 260" preserveAspectRatio="xMidYMid meet">
       ${edgesSvg}${nodesSvg}${labelsSvg}
@@ -573,6 +592,7 @@ function renderMap(){
       const train = trainById[expandedTrainId];
       const panel = document.createElement('div');
       panel.className = 'expanded-wagons';
+      panel.id = 'expandedWagonsPanel';
       panel.innerHTML = `<div class="expanded-head">${ICON.train} ${train.id}: ${city(train.from)} → ${city(train.to)} &middot; ${ICON.cost} €${train.costPerOrder}/order</div>
         <div class="wagons-row"></div>`;
       const row = panel.querySelector('.wagons-row');
