@@ -200,7 +200,7 @@
 
 <script>
 /* ---------- Config ---------- */
-let GAME_DURATION_SECONDS = 60; // change this to make the round shorter/longer
+let GAME_DURATION_SECONDS = 45; // change this to make the round shorter/longer
 const PENALTY_COST = 53.4;      // flat cost for each order never fully routed
 const TRANSSHIP_COST = 53;      // flat cost added once per order that changes trains at München
 
@@ -409,14 +409,14 @@ const TUTORIAL_ORDER_ID = 'O4';
 const TUTORIAL_TRAIN_ID = 'Train E';
 const TUTORIAL_WAGON_ID = trainById[TUTORIAL_TRAIN_ID].wagons[0].id;
 const TUTORIAL_STEPS = [
-  { label:'1 &middot; Select an order', text:`Tap order ${TUTORIAL_ORDER_ID} to start routing it.`,
+  { label:'1 &middot; Select an order', text:`Tap order ${TUTORIAL_ORDER_ID} to start dispatching it.`,
     done:()=>selectedOrderId===TUTORIAL_ORDER_ID,
     target:()=>document.querySelector(`#orderList [data-order-id="${TUTORIAL_ORDER_ID}"]`) },
   { label:'Tip', info:true,
-    text:`The selected order's full details &mdash; weight, length, status &mdash; show up here, between the orders list and the map.`,
+    text:`Here you can see the order's revenue, weight, and length.`,
     target:()=>document.getElementById('selectedOrderBar') },
   { label:'Tip', info:true,
-    text:`The map highlights every connection that's temporally feasible for this order. Greyed-out or dashed connections can't get it there in time.`,
+    text:`The map highlights every connection that's temporally feasible for this order.`,
     target:()=>document.querySelector('#groupList .network-map') },
   { label:'2 &middot; Choose a connection', text:`Tap the highlighted ${TUTORIAL_TRAIN_ID} connection &mdash; it runs straight from Ludwigshafen to Verona.`,
     done:()=>expandedTrainId===TUTORIAL_TRAIN_ID,
