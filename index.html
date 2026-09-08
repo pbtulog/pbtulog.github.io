@@ -409,7 +409,7 @@ const TUTORIAL_ORDER_ID = 'O4';
 const TUTORIAL_TRAIN_ID = 'Train E';
 const TUTORIAL_WAGON_ID = trainById[TUTORIAL_TRAIN_ID].wagons[0].id;
 const TUTORIAL_STEPS = [
-  { label:'1 &middot; Select an order', text:`Tap order ${TUTORIAL_ORDER_ID} to start dispatching it.`,
+  { label:'1 &middot; Select an order', text:`Tap order ${TUTORIAL_ORDER_ID} to start dispatching it. It generates a revenue of ${orderById[TUTORIAL_ORDER_ID].revenue}&euro; when dispatched successfully.`,
     done:()=>selectedOrderId===TUTORIAL_ORDER_ID,
     target:()=>document.querySelector(`#orderList [data-order-id="${TUTORIAL_ORDER_ID}"]`) },
   { label:'Tip', info:true,
@@ -421,7 +421,7 @@ const TUTORIAL_STEPS = [
   { label:'2 &middot; Choose a connection', text:`Tap the highlighted ${TUTORIAL_TRAIN_ID} connection &mdash; it runs straight from Ludwigshafen to Verona.`,
     done:()=>expandedTrainId===TUTORIAL_TRAIN_ID,
     target:()=>document.querySelector(`rect.map-label-hit[data-train="${TUTORIAL_TRAIN_ID}"]`) },
-  { label:'3 &middot; Pick a wagon', text:`Tap this wagon to assign ${TUTORIAL_ORDER_ID} to it and complete the route.`,
+  { label:'3 &middot; Pick a wagon', text:`Tap this wagon to assign ${TUTORIAL_ORDER_ID} to it and complete dispatching.`,
     done:()=>!!(playerAssign[TUTORIAL_ORDER_ID] && playerAssign[TUTORIAL_ORDER_ID].legs[TUTORIAL_TRAIN_ID]===TUTORIAL_WAGON_ID),
     target:()=>document.querySelector(`#expandedWagonsPanel [data-wagon-id="${TUTORIAL_WAGON_ID}"]`) },
 ];
@@ -537,7 +537,7 @@ function orderStatusText(o){
   const partial = a && !complete;
   if(complete){
     const route = matchingRoute(o, a.legs);
-    return `Routed via ${routeLabel(route)} — net €${(o.revenue-routeCost(route)).toFixed(1)}`;
+    return `Dispatched via ${routeLabel(route)} — net €${(o.revenue-routeCost(route)).toFixed(1)}`;
   } else if(partial){
     return `Partial: ${Object.keys(a.legs).length} leg(s) assigned — needs the rest of the route`;
   }
