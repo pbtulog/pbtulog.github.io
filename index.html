@@ -153,7 +153,7 @@
   or via the shared hub in München &mdash; but capacities are all limited.</p>
   <ul>
     <li>Tap an <span class="icon">📦</span><b>order</b>, then tap a highlighted connection on the <span class="icon">🗺️</span><b>map</b> to pick a wagon.</li>
-    <li>Every leg costs money to run, and changing trains at München costs an extra transshipment fee.</li>
+    <li>Every leg costs money, and changing trains at München costs an extra transshipment fee.</li>
     <li>Any order you never fully route costs you a fixed <b>rejection penalty</b> at the end.</li>
     <li>Goal: maximize <b>profits (revenue minus costs)</b>.</li>
   </ul>
@@ -515,7 +515,7 @@ function renderWagonChip(order, train, wagon){
   if(mine){ cls+=' mine'; label='✓ Assigned'; }
   else {
     const preview = checkCapacity(order, [{trainId:train.id,wagonId:wagon.id}], playerUsage);
-    if(preview.ok){ cls+=' ok'; label='✅ Fits'; } else { cls+=' full'; label='❌ Full'; }
+    if(preview.ok){ cls+=' ok'; label='✅ Fits'; } else { cls+=' full'; label='❌ Does not fit'; }
   }
   const div = document.createElement('div');
   div.className = cls;
