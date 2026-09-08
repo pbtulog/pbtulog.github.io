@@ -424,6 +424,9 @@ const TUTORIAL_STEPS = [
   { label:'3 &middot; Pick a wagon', text:`Tap this wagon to assign ${TUTORIAL_ORDER_ID} to it and complete dispatching.`,
     done:()=>!!(playerAssign[TUTORIAL_ORDER_ID] && playerAssign[TUTORIAL_ORDER_ID].legs[TUTORIAL_TRAIN_ID]===TUTORIAL_WAGON_ID),
     target:()=>document.querySelector(`#expandedWagonsPanel [data-wagon-id="${TUTORIAL_WAGON_ID}"]`) },
+  { label:'Ready!', info:true, nextLabel:'Start the clock &rarr;',
+    text:`Nice work! It's now up to you to dispatch the remaining orders &mdash; and time runs.`,
+    target:()=>document.getElementById('hud') },
 ];
 function startTutorial(){
   tutorialActive = true;
@@ -463,7 +466,9 @@ function positionTutorial(target, step){
 
   tip.querySelector('.tt-step').innerHTML = step.label;
   tip.querySelector('.tt-text').innerHTML = step.text;
-  tip.querySelector('.tt-next').style.display = step.info ? 'inline-block' : 'none';
+  const nextBtn = tip.querySelector('.tt-next');
+  nextBtn.style.display = step.info ? 'inline-block' : 'none';
+  nextBtn.innerHTML = step.nextLabel || 'Got it &rarr;';
   tip.style.display='block';
   const tipW = tip.offsetWidth || 230, tipH = tip.offsetHeight || 90;
   let top = r.bottom + pad + 10;
