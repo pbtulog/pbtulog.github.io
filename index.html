@@ -62,27 +62,37 @@
   #feedbackBar.err{background:#3a1620;color:var(--bad);border-color:var(--bad);}
   #feedbackBar.ok{background:#123321;color:var(--good);border-color:var(--good);}
 
-  .train-card{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px;
-    margin-bottom:12px;transition:opacity .15s;}
-  .train-card.disabled{opacity:.32;}
-  .train-head{font-size:15px;font-weight:700;margin-bottom:4px;}
-  .train-sub{font-size:12.5px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
-  .train-agg{font-size:12px;color:var(--muted);margin-bottom:10px;}
-  .time-banner{background:#3a1620;color:var(--bad);border:1px solid var(--bad);border-radius:6px;
-    padding:7px 10px;font-size:12.5px;margin-bottom:9px;}
+  .network-map{width:100%;height:auto;display:block;margin-bottom:6px;}
+  .map-edge{fill:none;stroke-width:3;transition:stroke .15s,stroke-width .15s,opacity .15s;}
+  .map-edge.idle{stroke:var(--muted);stroke-width:2.5;opacity:.8;}
+  .map-edge.irrelevant{stroke:var(--border);stroke-width:2;opacity:.55;}
+  .map-edge.infeasible{stroke:var(--warn);stroke-width:2.5;stroke-dasharray:7,6;}
+  .map-edge.feasible{stroke:var(--accent);stroke-width:4;cursor:pointer;}
+  .map-edge.feasible.next{stroke-width:5;filter:drop-shadow(0 0 5px var(--accent));}
+  .map-edge.mine{stroke:var(--good);stroke-width:4;}
+  .map-hit{fill:none;stroke:transparent;stroke-width:30;cursor:pointer;}
+  .map-label{fill:var(--muted);font-size:12px;text-anchor:middle;cursor:pointer;}
+  .map-label-hit{fill:transparent;text-anchor:middle;cursor:pointer;}
+  .map-node{fill:var(--panel2);stroke:var(--border);stroke-width:2;}
+  .map-node-label{fill:var(--text);font-size:13px;font-weight:700;text-anchor:middle;pointer-events:none;}
+  .map-hint{font-size:12px;color:var(--muted);text-align:center;padding:8px 4px 2px;}
+
+  .expanded-wagons{margin-top:12px;padding-top:12px;border-top:1px dashed var(--border);}
+  .expanded-head{font-size:14px;font-weight:700;margin-bottom:9px;}
   .wagons-row{display:flex;gap:10px;flex-wrap:wrap;}
   .wagon-chip{border:2px solid var(--border);border-radius:9px;padding:11px 13px;font-size:13px;
-    background:#101c28;cursor:pointer;flex:1 1 160px;transition:border-color .1s;}
-  .wagon-chip .wtitle{font-weight:700;font-size:15px;margin-bottom:5px;display:flex;justify-content:space-between;}
-  .wagon-chip .wcap{color:var(--muted);font-size:12.5px;line-height:1.7;}
+    background:#101c28;cursor:pointer;flex:1 1 140px;transition:border-color .1s;}
+  .wagon-chip .wtitle{font-weight:700;font-size:15px;margin-bottom:5px;}
+  .wagon-chip .wfit{font-size:13px;font-weight:700;color:var(--muted);}
+  .wagon-chip.ok{border-color:var(--good);}
+  .wagon-chip.ok .wfit{color:var(--good);}
+  .wagon-chip.full{border-color:var(--bad);opacity:.8;}
+  .wagon-chip.full .wfit{color:var(--bad);}
+  .wagon-chip.mine{border-color:var(--accent);background:#12283c;}
+  .wagon-chip.mine .wfit{color:var(--accent);}
   .wagon-chip .occupants{margin-top:6px;display:flex;gap:4px;flex-wrap:wrap;}
   .occ-tag{background:#243b52;border-radius:5px;padding:2px 7px;font-size:12px;}
   .occ-tag.me{background:var(--accent);color:#04121e;font-weight:700;}
-  .wagon-chip.ok{border-color:var(--good);}
-  .wagon-chip.full{border-color:var(--bad);opacity:.75;}
-  .wagon-chip.mine{border-color:var(--accent);background:#12283c;}
-  .wagon-chip.neutral{cursor:default;}
-  .wagon-chip.disabled{opacity:.4;cursor:not-allowed;pointer-events:none;}
 
   #startScreen,#endScreen{max-width:760px;margin:40px auto;padding:26px;background:var(--panel);
     border:1px solid var(--border);border-radius:12px;}
@@ -138,7 +148,7 @@
   <p>Six orders need to move from Hannover or Ludwigshafen to Verona. You can send each one directly,
   or via the shared hub in München &mdash; but capacities are all limited.</p>
   <ul>
-    <li>Tap an <span class="icon">📦</span><b>order</b>, then tap a <span class="icon">🚃</span><b>wagon</b> to dispatch the order on the train.</li>
+    <li>Tap an <span class="icon">📦</span><b>order</b>, then tap a highlighted connection on the <span class="icon">🗺️</span><b>map</b> to pick a wagon.</li>
     <li>Every leg costs money to run, and changing trains at München costs an extra transshipment fee.</li>
     <li>Any order you never fully route costs you a fixed <b>rejection penalty</b> at the end.</li>
     <li>Goal: maximize <b>profits (revenue minus costs)</b>.</li>
@@ -157,7 +167,7 @@
   <div class="col" id="servicesCol">
     <div class="panel">
       <h2>🚆 Routes &amp; Wagons</h2>
-      <div id="feedbackBar">Select an order, then tap a wagon to assign it.</div>
+      <div id="feedbackBar">Select an order, then tap a connection on the map.</div>
       <div id="groupList"></div>
     </div>
   </div>
@@ -180,6 +190,28 @@ const ICON = {
 /* ---------- Display names ---------- */
 const CITY_NAME = {HANNOLEHRT:'Hannover', LUDWIGSHFN:'Ludwigshafen', 'MÜNCHEN':'München', VERONA:'Verona'};
 function city(id){ return CITY_NAME[id] || id; }
+
+/* ---------- Network map geometry ---------- */
+const CITY_POS = {
+  HANNOLEHRT: {x:50,  y:50},
+  LUDWIGSHFN: {x:50,  y:210},
+  'MÜNCHEN':  {x:210, y:130},
+  VERONA:     {x:370, y:130},
+};
+const EDGE_PATH = {
+  'Train A': 'M50,50 L210,130',
+  'Train B': 'M50,210 L210,130',
+  'Train C': 'M210,130 L370,130',
+  'Train D': 'M50,50 Q210,10 370,130',
+  'Train E': 'M50,210 Q210,250 370,130',
+};
+const EDGE_LABEL_POS = {
+  'Train A': {x:130, y:82},
+  'Train B': {x:130, y:186},
+  'Train C': {x:290, y:118},
+  'Train D': {x:210, y:34},
+  'Train E': {x:210, y:230},
+};
 const WEEKDAYS = ['Mo','Di','Mi','Do','Fr','Sa','So'];
 function pad(n){ return String(n).padStart(2,'0'); }
 function fmtTime(mins){
@@ -249,11 +281,6 @@ function timeReasonMessage(reason, order){
 }
 function routeCost(route){
   return route.reduce((s,t)=>s+t.costPerOrder,0) + (route.length>1 ? TRANSSHIP_COST : 0);
-}
-function relevantTrainIds(order){
-  const s = new Set();
-  candidateRoutes(order).forEach(route=>route.forEach(t=>s.add(t.id)));
-  return s;
 }
 function routeForTrain(order, trainId){
   return candidateRoutes(order).find(route=>route.some(t=>t.id===trainId));
@@ -347,6 +374,7 @@ function computeBreakdown(assignMap){
 let playerUsage = freshUsage();
 let playerAssign = {}; // orderId -> {legs:{trainId:wagonId}}
 let selectedOrderId = null;
+let expandedTrainId = null;
 let timeLeft = GAME_DURATION_SECONDS;
 let timerHandle = null;
 let ended = false;
@@ -405,6 +433,7 @@ function selectOrder(orderId){
   if(ended) return;
   const wasSelected = selectedOrderId===orderId;
   selectedOrderId = wasSelected ? null : orderId;
+  expandedTrainId = null;
   renderAll();
   if(!wasSelected) scrollToPanel('servicesCol');
 }
@@ -450,63 +479,109 @@ function renderSelectedBar(){
   document.getElementById('deselectOrderBtn').onclick=()=>selectOrder(selectedOrderId);
   syncScrollOffset();
 }
-function renderTrainCard(tr, selOrder){
-  let relevant = true, timeInfeasible = false, timeMsg='', route=null;
-  if(selOrder){
-    route = routeForTrain(selOrder, tr.id);
-    relevant = !!route;
-    if(relevant){
-      const tc = routeTimeFeasible(selOrder, route);
-      if(!tc.ok){ timeInfeasible=true; timeMsg=timeReasonMessage(tc.reason, selOrder); }
-    }
+function edgeState(order, train){
+  const route = routeForTrain(order, train.id);
+  if(!route) return {state:'irrelevant', route:null};
+  const tcheck = routeTimeFeasible(order, route);
+  const a = playerAssign[order.id];
+  if(a && a.legs[train.id]) return {state:'mine', route, tcheck};
+  if(!tcheck.ok) return {state:'infeasible', route, tcheck};
+  let isNext = false;
+  if(a && route.length>1){
+    const other = route.find(t=>t.id!==train.id);
+    if(other && a.legs[other.id]) isNext = true;
   }
-  const disabled = selOrder && !relevant;
-  const tu = playerUsage.trains[tr.id] || {weight:0,length:0};
-  let html = `<div class="train-head">${ICON.train} ${tr.id}: ${city(tr.from)} → ${city(tr.to)}</div>
-    <div class="train-sub"><span>${ICON.ready} dep ${fmtTime(tr.dep)}</span><span>${ICON.due} arr ${fmtTime(tr.arr)}</span><span>${ICON.cost} €${tr.costPerOrder}/order</span></div>
-    <div class="train-agg">Train capacity used: ${tu.weight.toFixed(1)}/${tr.maxWeight}t &middot; ${tu.length.toFixed(2)}/${tr.maxLength}m</div>`;
-  if(selOrder && relevant && timeInfeasible){
-    html += `<div class="time-banner">${ICON.due} ${timeMsg}</div>`;
-  }
-  html += `<div class="wagons-row">`;
-  tr.wagons.forEach(w=>{
-    const u = playerUsage.wagons[w.id] || {weight:0,length:0,count:0};
-    const occ = occupantsOf(playerAssign, w.id);
-    const mine = selOrder && playerAssign[selOrder.id] && playerAssign[selOrder.id].legs[tr.id]===w.id;
-    let cls='wagon-chip';
-    if(!selOrder){ cls+=' neutral'; }
-    else if(disabled || timeInfeasible){ cls+=' disabled'; }
-    else if(mine){ cls+=' mine'; }
-    else {
-      const preview = checkCapacity(selOrder, [{trainId:tr.id,wagonId:w.id}], playerUsage);
-      cls += preview.ok ? ' ok' : ' full';
-    }
-    html += `<div class="${cls}" data-train="${tr.id}" data-wagon="${w.id}">
-      <div class="wtitle"><span>${ICON.wagon} ${w.id}</span>${mine?'<span>✓</span>':''}</div>
-      <div class="wcap">${ICON.weight} ${(w.maxWeight-u.weight).toFixed(1)}/${w.maxWeight}t free<br>
-        ${ICON.length} ${(w.maxLength-u.length).toFixed(2)}/${w.maxLength}m free &middot; ${ICON.orders} ${u.count}/${w.maxOrders}</div>
-      ${occ.length? `<div class="occupants">${occ.map(oid=>`<span class="occ-tag${oid===selectedOrderId?' me':''}">${oid}</span>`).join('')}</div>`:''}
-    </div>`;
-  });
-  html += `</div>`;
-
-  const card = document.createElement('div');
-  card.className = 'train-card'+(disabled?' disabled':'');
-  card.innerHTML = html;
-  if(selOrder && relevant && !timeInfeasible){
-    card.querySelectorAll('.wagon-chip').forEach(chip=>{
-      chip.onclick=()=>{ if(ended) return; toggleWagon(selOrder, trainById[chip.dataset.train], wagonOf(chip.dataset.train, chip.dataset.wagon)); };
-    });
-  }
-  return card;
+  return {state:'feasible', route, tcheck, isNext};
 }
-function renderGroups(){
+function onEdgeClick(trainId){
+  if(ended) return;
+  if(!selectedOrderId){ showFeedback('Select an order above, then tap a connection.', ''); return; }
+  const order = orderById[selectedOrderId];
+  const train = trainById[trainId];
+  const st = edgeState(order, train);
+  if(st.state==='irrelevant'){
+    showFeedback(`${train.id} doesn't serve ${order.id}'s origin (${city(order.origin)}).`, 'err');
+    return;
+  }
+  if(st.state==='infeasible'){
+    showFeedback(timeReasonMessage(st.tcheck.reason, order), 'err');
+    return;
+  }
+  expandedTrainId = (expandedTrainId===trainId) ? null : trainId;
+  renderAll();
+}
+function renderWagonChip(order, train, wagon){
+  const occ = occupantsOf(playerAssign, wagon.id);
+  const mine = playerAssign[order.id] && playerAssign[order.id].legs[train.id]===wagon.id;
+  let cls='wagon-chip', label;
+  if(mine){ cls+=' mine'; label='✓ Assigned'; }
+  else {
+    const preview = checkCapacity(order, [{trainId:train.id,wagonId:wagon.id}], playerUsage);
+    if(preview.ok){ cls+=' ok'; label='✅ Fits'; } else { cls+=' full'; label='❌ Full'; }
+  }
+  const div = document.createElement('div');
+  div.className = cls;
+  div.innerHTML = `
+    <div class="wtitle"><span>${ICON.wagon} ${wagon.id}</span></div>
+    <div class="wfit">${label}</div>
+    ${occ.length? `<div class="occupants">${occ.map(oid=>`<span class="occ-tag${oid===order.id?' me':''}">${oid}</span>`).join('')}</div>`:''}
+  `;
+  div.onclick = ()=>{ if(ended) return; toggleWagon(order, train, wagon); };
+  return div;
+}
+function renderMap(){
   const el = document.getElementById('groupList');
-  el.innerHTML='';
   const selOrder = selectedOrderId ? orderById[selectedOrderId] : null;
-  trains.forEach(tr=>{
-    el.appendChild(renderTrainCard(tr, selOrder));
+  const states = {};
+  trains.forEach(t=>{ states[t.id] = selOrder ? edgeState(selOrder, t) : {state:'idle'}; });
+
+  const edgesSvg = trains.map(t=>{
+    const st = states[t.id];
+    let cls = 'map-edge '+st.state;
+    if(st.isNext) cls += ' next';
+    const d = EDGE_PATH[t.id];
+    return `<path class="map-hit" d="${d}" data-train="${t.id}"></path><path class="${cls}" d="${d}"></path>`;
+  }).join('');
+
+  const labelsSvg = trains.map(t=>{
+    const p = EDGE_LABEL_POS[t.id];
+    const badge = states[t.id].state==='mine' ? ' ✓' : '';
+    return `<rect class="map-label-hit" data-train="${t.id}" x="${p.x-38}" y="${p.y-16}" width="76" height="24" rx="7"></rect>
+      <text class="map-label" data-train="${t.id}" x="${p.x}" y="${p.y}">${t.id}${badge}</text>`;
+  }).join('');
+
+  const nodesSvg = Object.entries(CITY_POS).map(([id,p])=>
+    `<circle class="map-node" cx="${p.x}" cy="${p.y}" r="8"></circle>
+     <text class="map-node-label" x="${p.x}" y="${p.y + (p.y<130 ? -14 : 24)}">${city(id)}</text>`
+  ).join('');
+
+  let html = `<svg class="network-map" viewBox="0 0 400 260" preserveAspectRatio="xMidYMid meet">
+      ${edgesSvg}${nodesSvg}${labelsSvg}
+    </svg>`;
+  if(!selOrder){
+    html += `<div class="map-hint">Select an order above to see its possible connections.</div>`;
+  }
+  el.innerHTML = html;
+
+  el.querySelectorAll('.map-hit, .map-label-hit, .map-label').forEach(hit=>{
+    hit.addEventListener('click', ()=>onEdgeClick(hit.dataset.train));
   });
+
+  if(selOrder && expandedTrainId){
+    const st = states[expandedTrainId];
+    if(st && (st.state==='feasible' || st.state==='mine')){
+      const train = trainById[expandedTrainId];
+      const panel = document.createElement('div');
+      panel.className = 'expanded-wagons';
+      panel.innerHTML = `<div class="expanded-head">${ICON.train} ${train.id}: ${city(train.from)} → ${city(train.to)} &middot; ${ICON.cost} €${train.costPerOrder}/order</div>
+        <div class="wagons-row"></div>`;
+      const row = panel.querySelector('.wagons-row');
+      train.wagons.forEach(w=>row.appendChild(renderWagonChip(selOrder, train, w)));
+      el.appendChild(panel);
+    } else {
+      expandedTrainId = null;
+    }
+  }
 }
 function toggleWagon(order, train, wagon){
   const a = playerAssign[order.id] || {legs:{}};
@@ -544,8 +619,9 @@ function toggleWagon(order, train, wagon){
   a.legs[train.id] = wagon.id;
   const justCompleted = isComplete(order, a);
   if(justCompleted){
-    showFeedback('Select an order, then tap a wagon to assign it.', 'neutral');
+    showFeedback('Select an order, then tap a connection on the map.', 'neutral');
     selectedOrderId = null;
+    expandedTrainId = null;
   } else {
     showFeedback(`Leg assigned. Assign the remaining leg on this route to complete ${order.id}.`, 'ok');
   }
@@ -566,7 +642,7 @@ function renderHUD(){
   document.getElementById('acceptedCount').textContent = b.accepted+'/'+orders.length;
 }
 function renderAll(){
-  renderOrders(); renderGroups(); renderHUD(); renderSelectedBar();
+  renderOrders(); renderMap(); renderHUD(); renderSelectedBar();
 }
 
 /* ---------- Timer / lifecycle ---------- */
