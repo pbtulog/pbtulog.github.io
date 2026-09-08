@@ -68,7 +68,6 @@
   .map-edge.irrelevant{stroke:var(--border);stroke-width:2;opacity:.55;}
   .map-edge.infeasible{stroke:var(--warn);stroke-width:2.5;stroke-dasharray:7,6;}
   .map-edge.feasible{stroke:var(--accent);stroke-width:4;cursor:pointer;}
-  .map-edge.feasible.next{stroke-width:5;filter:drop-shadow(0 0 5px var(--accent));}
   .map-edge.mine{stroke:var(--good);stroke-width:4;}
   .map-edge.expanded{stroke:var(--gold);stroke-width:6;filter:drop-shadow(0 0 6px var(--gold));}
   .map-hit{fill:none;stroke:transparent;stroke-width:30;cursor:pointer;}
@@ -98,7 +97,6 @@
   .wagon-chip.mine .wfit{color:var(--accent);}
   .wagon-chip .occupants{margin-top:6px;display:flex;gap:4px;flex-wrap:wrap;}
   .occ-tag{background:#243b52;border-radius:5px;padding:2px 7px;font-size:12px;}
-  .occ-tag.me{background:var(--accent);color:#04121e;font-weight:700;}
 
   #startScreen,#endScreen{max-width:760px;margin:40px auto;padding:26px;background:var(--panel);
     border:1px solid var(--border);border-radius:12px;}
@@ -163,13 +161,13 @@
 </div>
 
 <div id="main">
-  <div id="selectedOrderBar" style="display:none;"></div>
   <div class="col" id="ordersCol">
     <div class="panel">
       <h2>📦 Orders</h2>
       <div id="orderList"></div>
     </div>
   </div>
+  <div id="selectedOrderBar" style="display:none;"></div>
   <div class="col" id="servicesCol">
     <div class="panel">
       <h2>🚆 Routes &amp; Wagons</h2>
@@ -454,10 +452,6 @@ function renderOrders(){
     div.className='order-card'+(o.id===selectedOrderId?' selected':'')+(complete?' complete':'')+(partial?' partial':'');
     div.innerHTML = `
       <div class="order-top"><span>${o.id}: ${city(o.origin)} → ${city(o.destination)}</span><span>${ICON.revenue} €${o.revenue}</span></div>
-      <div class="order-meta">
-        <span>${ICON.weight} ${o.weight}t</span><span>${ICON.length} ${o.length.toFixed(2)}m</span>
-        <span>${ICON.ready} ${fmtTime(o.ready)}</span><span>${ICON.due} ${fmtTime(o.due)}</span>
-      </div>
       <div class="status">${orderStatusText(o)}</div>
     `;
     div.onclick=()=>selectOrder(o.id);
@@ -492,12 +486,7 @@ function edgeState(order, train){
   const a = playerAssign[order.id];
   if(a && a.legs[train.id]) return {state:'mine', route, tcheck};
   if(!tcheck.ok) return {state:'infeasible', route, tcheck};
-  let isNext = false;
-  if(a && route.length>1){
-    const other = route.find(t=>t.id!==train.id);
-    if(other && a.legs[other.id]) isNext = true;
-  }
-  return {state:'feasible', route, tcheck, isNext};
+  return {state:'feasible', route, tcheck};
 }
 function onEdgeClick(trainId){
   if(ended) return;
@@ -535,7 +524,7 @@ function renderWagonChip(order, train, wagon){
     <div class="wfit">${label}</div>
     <div class="wcap">${ICON.weight} ${(wagon.maxWeight-u.weight).toFixed(1)}/${wagon.maxWeight}t free<br>
       ${ICON.length} ${(wagon.maxLength-u.length).toFixed(2)}/${wagon.maxLength}m free &middot; ${ICON.orders} ${u.count}/${wagon.maxOrders}</div>
-    ${occ.length? `<div class="occupants">${occ.map(oid=>`<span class="occ-tag${oid===order.id?' me':''}">${oid}</span>`).join('')}</div>`:''}
+    ${(()=>{ const others = occ.filter(oid=>oid!==order.id); return others.length? `<div class="occupants">${others.map(oid=>`<span class="occ-tag">${oid}</span>`).join('')}</div>` : ''; })()}
   `;
   div.onclick = ()=>{ if(ended) return; toggleWagon(order, train, wagon); };
   return div;
@@ -549,7 +538,6 @@ function renderMap(){
   const edgesSvg = trains.map(t=>{
     const st = states[t.id];
     let cls = 'map-edge '+st.state;
-    if(st.isNext) cls += ' next';
     if(t.id===expandedTrainId) cls += ' expanded';
     const d = EDGE_PATH[t.id];
     return `<path class="map-hit" d="${d}" data-train="${t.id}"></path><path class="${cls}" d="${d}"></path>`;
