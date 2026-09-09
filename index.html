@@ -421,7 +421,7 @@ const TUTORIAL_STEPS = [
   { label:'2 &middot; Choose a connection', text:`Tap the highlighted ${TUTORIAL_TRAIN_ID} connection &mdash; it runs straight from Ludwigshafen to Verona.`,
     done:()=>expandedTrainId===TUTORIAL_TRAIN_ID,
     target:()=>document.querySelector(`rect.map-label-hit[data-train="${TUTORIAL_TRAIN_ID}"]`) },
-  { label:'3 &middot; Pick a wagon', text:`Tap this wagon to assign ${TUTORIAL_ORDER_ID} to it and complete dispatching.`,
+  { label:'3 &middot; Pick a wagon', text:`Tap a wagon with sufficient capacity to assign ${TUTORIAL_ORDER_ID} to it and complete dispatching.`,
     done:()=>!!(playerAssign[TUTORIAL_ORDER_ID] && playerAssign[TUTORIAL_ORDER_ID].legs[TUTORIAL_TRAIN_ID]===TUTORIAL_WAGON_ID),
     target:()=>document.querySelector(`#expandedWagonsPanel [data-wagon-id="${TUTORIAL_WAGON_ID}"]`) },
   { label:'Ready!', info:true, nextLabel:'Start the clock &rarr;',
@@ -813,7 +813,8 @@ function endGame(){
   document.getElementById('main').classList.remove('show');
   const pb = computeBreakdown(playerAssign);
   const ob = computeBreakdown(optimal.assign);
-  const pct = ob.profit>0 ? (pb.profit/ob.profit*100) : 100;
+  const worst = -orders.length*PENALTY_COST; // profit from rejecting every order
+  const pct = ob.profit>worst ? Math.max(0, Math.min(100, (pb.profit-worst)/(ob.profit-worst)*100)) : 100;
 
   const missed = orders.filter(o=>isComplete(o, optimal.assign[o.id]) && !isComplete(o, playerAssign[o.id]));
   const extra = orders.filter(o=>isComplete(o, playerAssign[o.id]) && !isComplete(o, optimal.assign[o.id]));
