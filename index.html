@@ -73,6 +73,14 @@
   .map-hit{fill:none;stroke:transparent;stroke-width:30;cursor:pointer;}
   .map-label{fill:var(--muted);font-size:12px;text-anchor:middle;cursor:pointer;}
   .map-label-hit{fill:transparent;text-anchor:middle;cursor:pointer;}
+  .map-cap-badge{pointer-events:none;stroke-width:1;transition:fill .15s,stroke .15s;}
+  .map-cap-badge.low{fill:rgba(62,207,142,.14);stroke:rgba(62,207,142,.4);}
+  .map-cap-badge.mid{fill:rgba(255,180,84,.18);stroke:rgba(255,180,84,.5);}
+  .map-cap-badge.high{fill:rgba(255,95,109,.22);stroke:rgba(255,95,109,.55);}
+  .map-cap-text{font-size:9.5px;text-anchor:middle;cursor:pointer;}
+  .map-cap-text.low{fill:var(--good);}
+  .map-cap-text.mid{fill:var(--warn);}
+  .map-cap-text.high{fill:var(--bad);}
   .map-node{fill:var(--panel2);stroke:var(--border);stroke-width:2;}
   .map-node.origin{stroke:var(--accent);stroke-width:3;}
   .map-node.destination{stroke:var(--good);stroke-width:3;}
@@ -568,6 +576,7 @@ function renderOrders(){
     div.dataset.orderId = o.id;
     div.innerHTML = `
       <div class="order-top"><span>${o.id}: ${city(o.origin)} → ${city(o.destination)}</span><span>${ICON.revenue} €${o.revenue}</span></div>
+      <div class="order-meta"><span>${ICON.weight} ${o.weight}t</span><span>${ICON.length} ${o.length.toFixed(2)}m</span></div>
       <div class="status">${orderStatusText(o)}</div>
     `;
     div.onclick=()=>selectOrder(o.id);
@@ -644,6 +653,16 @@ function renderWagonChip(order, train, wagon){
   div.onclick = ()=>{ if(ended) return; toggleWagon(order, train, wagon); };
   return div;
 }
+function trainCapacityInfo(train){
+  let usedWeight=0, usedLength=0, usedCount=0, capWeight=0, capLength=0, capCount=0;
+  train.wagons.forEach(w=>{
+    const u = playerUsage.wagons[w.id] || {weight:0,length:0,count:0};
+    usedWeight+=u.weight; usedLength+=u.length; usedCount+=u.count;
+    capWeight+=w.maxWeight; capLength+=w.maxLength; capCount+=w.maxOrders;
+  });
+  const frac = Math.max(usedWeight/capWeight, usedLength/capLength, usedCount/capCount);
+  return {frac};
+}
 function renderMap(){
   const el = document.getElementById('groupList');
   const selOrder = selectedOrderId ? orderById[selectedOrderId] : null;
@@ -661,8 +680,13 @@ function renderMap(){
   const labelsSvg = trains.map(t=>{
     const p = EDGE_LABEL_POS[t.id];
     const badge = states[t.id].state==='mine' ? ' ✓' : '';
-    return `<rect class="map-label-hit" data-train="${t.id}" x="${p.x-38}" y="${p.y-16}" width="76" height="24" rx="7"></rect>
-      <text class="map-label" data-train="${t.id}" x="${p.x}" y="${p.y}">${t.id}${badge}</text>`;
+    const cap = trainCapacityInfo(t);
+    const capCls = cap.frac>=0.75 ? 'high' : cap.frac>=0.34 ? 'mid' : 'low';
+    const capPct = Math.round(cap.frac*100);
+    return `<rect class="map-label-hit" data-train="${t.id}" x="${p.x-38}" y="${p.y-19}" width="76" height="34" rx="8"></rect>
+      <rect class="map-cap-badge ${capCls}" x="${p.x-38}" y="${p.y-19}" width="76" height="34" rx="8"></rect>
+      <text class="map-label" data-train="${t.id}" x="${p.x}" y="${p.y-3}">${t.id}${badge}</text>
+      <text class="map-cap-text ${capCls}" data-train="${t.id}" x="${p.x}" y="${p.y+11}">${capPct}% full</text>`;
   }).join('');
 
   const nodesSvg = Object.entries(CITY_POS).map(([id,p])=>{
@@ -685,7 +709,7 @@ function renderMap(){
   }
   el.innerHTML = html;
 
-  el.querySelectorAll('.map-hit, .map-label-hit, .map-label').forEach(hit=>{
+  el.querySelectorAll('.map-hit, .map-label-hit, .map-label, .map-cap-text').forEach(hit=>{
     hit.addEventListener('click', ()=>onEdgeClick(hit.dataset.train));
   });
 
