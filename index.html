@@ -417,12 +417,9 @@ const TUTORIAL_ORDER_ID = 'O4';
 const TUTORIAL_TRAIN_ID = 'Train E';
 const TUTORIAL_WAGON_ID = trainById[TUTORIAL_TRAIN_ID].wagons[0].id;
 const TUTORIAL_STEPS = [
-  { label:'1 &middot; Select an order', text:`Tap order ${TUTORIAL_ORDER_ID} to start dispatching it. It generates a revenue of ${orderById[TUTORIAL_ORDER_ID].revenue}&euro; when dispatched successfully.`,
+  { label:'1 &middot; Select an order', text:`Tap order ${TUTORIAL_ORDER_ID} to start dispatching it. You see weight, length and revenue that the order generates when dispatched successfully.`,
     done:()=>selectedOrderId===TUTORIAL_ORDER_ID,
     target:()=>document.querySelector(`#orderList [data-order-id="${TUTORIAL_ORDER_ID}"]`) },
-  { label:'Tip', info:true,
-    text:`Here you can see the order's revenue, weight, and length.`,
-    target:()=>document.getElementById('selectedOrderBar') },
   { label:'Tip', info:true,
     text:`The map highlights every connection that's temporally feasible for this order.`,
     target:()=>document.querySelector('#groupList .network-map') },
