@@ -256,7 +256,7 @@ function fmtTime(mins){
 const wagonTypeDefs = {
   A: {maxLength:16, maxWeight:25, maxOrders:2},
   B: {maxLength:16, maxWeight:20, maxOrders:2},
-  C: {maxLength:14, maxWeight:25, maxOrders:2},
+  C: {maxLength:14, maxWeight:24, maxOrders:2},
   D: {maxLength:13, maxWeight:20, maxOrders:2},
 };
 function makeWagons(serviceId, typeList){
@@ -264,9 +264,9 @@ function makeWagons(serviceId, typeList){
 }
 const trains = [
   {id:'Train A', from:'HANNOLEHRT', to:'MÜNCHEN', dep:1310, arr:1810, maxWeight:45, maxLength:32, costPerOrder:120,
-   wagons:makeWagons('Train A', ['A','A'])},
+   wagons:makeWagons('Train A', ['A','C'])},
   {id:'Train B', from:'LUDWIGSHFN', to:'MÜNCHEN', dep:1155, arr:1770, maxWeight:45, maxLength:32, costPerOrder:120,
-   wagons:makeWagons('Train B', ['A','A'])},
+   wagons:makeWagons('Train B', ['A','C'])},
   {id:'Train C', from:'MÜNCHEN', to:'VERONA', dep:2150, arr:3195, maxWeight:40, maxLength:29, costPerOrder:180,
    wagons:makeWagons('Train C', ['A','B'])},
   {id:'Train D', from:'HANNOLEHRT', to:'VERONA', dep:1630, arr:3480, maxWeight:30, maxLength:16, costPerOrder:220,
